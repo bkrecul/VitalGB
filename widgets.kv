@@ -1,0 +1,196 @@
+<RVPacientes>:
+    viewclass: 'SelectableLabel'
+    SelectableRecycleBoxLayout:
+        id: pacientes
+        default_size: None, dp(56)
+        default_size_hint: 1, None
+        size_hint_y: None
+        height: self.minimum_height
+        orientation: 'vertical'
+        multiselect: False
+        touch_multiselect: True
+
+<IconListItem>
+    IconLeftWidget:
+        icon: root.icon
+
+<SelectableLabel>:
+    # Draw a background to indicate selection
+    canvas.before:
+        Color:
+            rgba: (0.01, 0.02, 0.37, 0.2) if self.selected else (0.79, 0.94, 0.97, 1)
+            #rgba: (0.79, 0.94, 0.97, 1)
+        Rectangle:
+            pos: self.pos
+            size: self.size
+
+<LabelDeEntradaPaciente@Label>:
+    text_size: self.size
+    halign: 'right'
+    valign: 'center'
+    color: (0.01, 0.02, 0.37, 1)
+    font_name: "fonts/Ubuntu-M"
+
+<LabelDeMedidas@LabelDeEntradaPaciente>:
+    halign: 'left'
+
+<LabelDeMedidasValores@LabelDeEntradaPaciente>:
+    color: (0.01, 0.02, 0.37, 0.8)
+    halign: 'left'
+
+<InputDeDatosPaciente@TextInput>:
+
+    text_size: self.size
+    size_hint_y: None
+    padding_y: [self.height / 2.0 - (self.line_height / 2.0) * len(self._lines), 0]
+    multiline: False
+    keyboard_suggestions: True
+    font_name: "fonts/Ubuntu-Th"
+    size: 1,dp(24)
+    write_tab: False
+
+<SelectableBox>:
+    fecha: ""
+    flexion_maxima: ""
+    extension_maxima: ""
+    fuerza_flexion_maxima: ""
+    fuerza_extension_maxima: ""
+    selected: False
+    # Draw a background to indicate selection
+    canvas.before:
+        Color:
+            rgba: (.0, 0.9, .1, .3) if self.selected else (0.79, 0.94, 0.97, 1)
+        Rectangle:
+            pos: self.pos
+            size: self.size
+    LabelDeMedidasValores:
+        text: root.fecha
+    LabelDeMedidasValores:
+        text: root.flexion_maxima
+    LabelDeMedidasValores:
+        text: root.extension_maxima
+    LabelDeMedidasValores:
+        text: root.fuerza_flexion_maxima
+    LabelDeMedidasValores:
+        text: root.fuerza_extension_maxima
+
+<RVEstudios>:
+    viewclass: 'SelectableBox'
+    SelectableRecycleBoxLayout:
+        id: estudios
+        default_size: None, dp(56)
+        default_size_hint: 1, None
+        size_hint_y: None
+        height: self.minimum_height
+        orientation: 'vertical'
+        multiselect: False
+        touch_multiselect: True
+
+<PopUpExportSuccessful>
+    size_hint: 0.9, 0.35
+    pos_hint: {"x":0.05, "top":0.75}
+    title: "Exportación Exitosa"
+    path: ""
+    BoxLayout:
+        orientation: "vertical"
+        size: root.width, root.height
+        padding: dp(20)
+        spacing: dp(10)
+        Label:
+            size_hint_y: 0.75
+            text_size: self.size
+            halign: 'left'
+            valign: 'top'
+            font_name: "fonts/Ubuntu-C"
+            text: "Archivo guardado en \nMemoria Interna/VitalGB/reportes/ \n¿Qué acción desea realizar?"
+            # text: "Archivo guardado en \n"+root.path+"\n¿Qué acción desea realizar?"
+        BoxLayout:
+            size_hint_y: 0.25
+            orientation: "horizontal"
+            Button:
+                text: "Enviar"
+                on_release: root.enviar()
+            Button:
+                text: "Abrir"
+                on_release: root.abrir()
+
+<DialogoCargarAngulos>
+    orientation: "vertical"
+    spacing: "12dp"
+    size_hint_y: None
+    height: "120dp"
+    MDTextField:
+        id: flexion
+        input_filter: 'int'
+        hint_text: "Flexión máxima"
+    MDTextField:
+        id: extension
+        input_filter: 'int'
+        hint_text: "Extensión máxima"
+
+<DialogoCargarFuerza>
+    orientation: "vertical"
+    spacing: "12dp"
+    size_hint_y: None
+    height: "80dp"
+    MDTextField:
+        id: fuerza
+        hint_text: "Esfuerzo medido"
+
+<PopUpException>
+    size_hint: 0.7, 0.3
+    title: "Error"
+    text: ""
+    BoxLayout:
+        orientation: "vertical"
+        size: root.width, root.height
+        padding: dp(20)
+        spacing: dp(10)
+        Label:
+            text_size: self.size
+            halign: 'center'
+            valign: 'center'
+            font_name: "fonts/Ubuntu-C"
+            text: root.text
+
+<PopUpEleccionDeFuerza>
+    size_hint: 0.7, 0.25
+    title: "Elija que fuerza medirá"
+    text: ""
+    GridLayout:
+        cols: 2
+        padding: dp(20)
+        spacing: dp(10)
+        AnchorLayout:
+            anchor_x: 'center'
+            MDFillRoundFlatButton:
+                text: "EXTENSIÓN"
+                on_release: root.extension(), root.dismiss()
+        AnchorLayout:
+            anchor_x: 'center'
+            MDFillRoundFlatButton:
+                text: "FLEXIÓN"
+                on_release: root.flexion(), root.dismiss()
+
+<PopUpMeasuring>
+    size_hint: 0.7, 0.3
+    title: "Esperando"
+    text: "Flexión máxima medida:\nExtensión máxima medida:"
+    auto_dismiss: False
+    BoxLayout:
+        orientation: "vertical"
+        size: root.width, root.height
+        padding: dp(20)
+        spacing: dp(10)
+        Label:
+            text_size: self.size
+            halign: 'center'
+            valign: 'center'
+            font_name: "fonts/Ubuntu-C"
+            text: root.text
+        BoxLayout:
+            orientation: "horizontal"
+            id: buttons
+            Button:
+                text: "Cancelar"
+                on_release: root.clock.cancel(), root.dismiss()

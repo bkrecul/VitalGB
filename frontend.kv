@@ -1,0 +1,300 @@
+#: include widgets.kv
+#: import NoTransition kivy.uix.screenmanager.NoTransition
+
+MDNavigationLayout:
+    ScreenManager:
+        id: screen_manager
+        transition: NoTransition()
+        PantallaPrincipal:
+            id: pantalla_principal
+            name: 'pantalla_principal'
+        PantallaPacienteSeleccionado:
+            id: pantalla_paciente_seleccionado
+            name: 'pantalla_paciente_seleccionado'
+        PantallaAgregarPaciente:
+            id: pantalla_agregar_paciente
+            name: 'pantalla_agregar_paciente'
+
+    MDNavigationDrawer:
+        id: nav_drawer
+        anchor: "right"
+        swipe_edge_width: 0
+        opening_time: 0.3
+
+        ContentNavigationDrawer:
+            id: content_drawer
+            orientation: "vertical"
+            padding: "8dp"
+            spacing: "8dp"
+
+
+            AnchorLayout:
+                anchor_x: "right"
+                size_hint_y: None
+                height: avatar.height
+
+                Image:
+                    id: avatar
+                    size_hint: 1, None
+                    size: self.size
+                    source: "logo.png"
+
+            MDList:
+                OneLineAvatarListItem:
+                    text: "Exportar a PDF"
+                    on_release: root.ids.pantalla_paciente_seleccionado.generate_pdf()
+                    ImageLeftWidget:
+                        source: "pdf.png"
+                OneLineAvatarListItem:
+                    text: "Exportar a Excel"
+                    on_release: root.ids.pantalla_paciente_seleccionado.generate_csv()
+                    ImageLeftWidget:
+                        source: "excel.png"
+
+            BoxLayout:
+
+
+<PantallaPrincipal>:
+    anchor_x: "right"
+    anchor_y: "bottom"
+    BoxLayout:
+        orientation: "vertical"
+        spacing: 20
+
+        # ==== COLOR DE FONDO ======
+
+        canvas:
+            Color:
+                rgba: 0.79, 0.94, 0.97, 1
+            Rectangle: #woohoo!!!
+                size: self.size
+                pos: self.pos
+
+        # ==== CABECERA DE VENTANA =====
+
+        BoxLayout:
+            padding: dp(10),0,0,0
+            canvas:
+                Color:
+                    rgba: 0.01, 0.02, 0.37, 0.5
+                Rectangle: #woohoo!!!
+                    size: self.size
+                    pos: self.pos
+            size_hint: 1,0.1
+            Image:
+                source: "icon.png"
+            Label:
+                text: "VitalGB"
+                font_name: "fonts/Ubuntu-B"
+                font_size: "24dp"
+                size_hint:None,1
+                pos_hint:{"x":0.05}
+            Label:
+            MDRoundFlatIconButton:
+                icon: "bluetooth"
+                text: "Conectar"
+                id: bt
+                pos_hint:{"right":1, "center_y": .5}
+                font_name: "fonts/Ubuntu-B"
+                size_hint:None,0.8
+                size: "90dp","100dp"
+                on_release: root.bluetooth()
+                text_color: 1, 1, 1, 1
+                icon_color: "red"
+                line_color: "blue"
+            BoxLayout:
+                size_hint:None,0.8
+                size: "10dp","10dp"
+
+        # ==== CUERPO (RecycleView) ======
+
+        RVPacientes: # The Recycle View that lists all patients
+            size_hint_y:0.9
+            id:rv
+
+    # ===== Boton de Agregar Paciente ====
+
+    BoxLayout:
+        orientation: "vertical"
+        padding: dp(20)
+        Button:
+            id: add_patient_button
+            pos_hint:{"right":1}
+            size_hint:None,None
+            size: "80dp", "80dp"
+            padding: "20dp", "20dp"
+            background_color: 0,0,0,0
+            on_press: root.add_patient_button_press()
+            on_release: root.add_patient_button_release()
+            Image:
+                id: add_patient_image
+                size: "100dp", "100dp"
+                source: 'add.png'
+                center_x: self.parent.center_x
+                center_y: self.parent.center_y
+
+
+<PantallaAgregarPaciente>:
+
+    canvas:
+        Color:
+            rgba: 0.79, 0.94, 0.97, 1
+        Rectangle: #woohoo!!!
+            size: self.size
+            pos: self.pos
+
+    BoxLayout:
+        orientation: 'vertical'
+
+        # ==== CABECERA =======
+
+        MDToolbar:
+            title: "Nuevo Paciente"
+            mode: "center"
+            halign: "center"
+            elevation: 10
+            md_bg_color: 0.4, 0.48, 0.67, 1
+            left_action_items: [["arrow-left", lambda x: app.volver_pantalla_principal()]]
+            font_size: "24dp"
+            font_style: "Caption"
+
+        # ==== BODY ==========
+
+        # ==== Label e Input para Nombre ====
+
+        MDBoxLayout:
+            adaptive_height: True
+            orientation: 'vertical'
+            spacing: dp(15)
+            padding: dp(50),dp(15),dp(50),dp(15)
+            MDTextField:
+                hint_text: "Nombre"
+                text_color_normal: 0,0,0,1
+                helper_text: "Este campo es obligatorio."
+                helper_text_mode: "on_focus"
+                id: entrada_nombre
+                write_tab: False
+                on_text_validate: root.ids.entrada_apellido.focus = True
+
+        # ==== Label e Input para Apellido =====
+
+            MDTextField:
+                hint_text: "Apellido"
+                helper_text: "Este campo es obligatorio."
+                helper_text_mode: "on_focus"
+                id: entrada_apellido
+                text_color_normal: 0,0,0,1
+                write_tab: False
+                on_text_validate: root.ids.entrada_edad.focus = True
+
+        # ==== Label e Input para Edad y Peso ====
+
+            MDBoxLayout:
+                orientation: 'horizontal'
+                adaptive_height: True
+                spacing: dp(15)
+                MDTextField:
+                    hint_text: "Edad"
+                    id: entrada_edad
+                    write_tab: False
+                    input_type: 'number'
+                    input_filter: 'int'
+                    on_text_validate: root.ids.entrada_peso.focus = True
+
+                MDTextField:
+                    hint_text: "Peso"
+                    input_type: 'number'
+                    write_tab: False
+                    input_filter: 'int'
+                    id: entrada_peso
+                    on_text_validate: root.ids.entrada_sexo.focus = True
+
+
+            MDTextField:
+                icon_right: "arrow-down-drop-circle-outline"
+                hint_text: "Sexo"
+                id: entrada_sexo
+                write_tab: False
+                on_focus: root.open_menu()
+                on_text_validate: root.menu.dismiss()
+
+            ScrollView:
+                size_hint_y: None
+                MDTextField:
+                    multiline: True
+                    hint_text: "Patologia"
+                    id: entrada_patologia
+
+        AnchorLayout:
+            anchor_y: "center"
+            MDRectangleFlatIconButton:
+                text: "ACEPTAR"
+                icon: "account-check-outline"
+                font_size: "18sp"
+                on_release: root.crear_paciente()
+
+
+<PantallaPacienteSeleccionado>:
+    canvas:
+        Color:
+            rgba: 0.79, 0.94, 0.97, 1
+        Rectangle: #woohoo!!!
+            size: self.size
+            pos: self.pos
+
+    BoxLayout:
+        orientation: 'vertical'
+        MDToolbar:
+            id: titulo_nombre_paciente
+            text: "Paciente"
+            title: self.text
+            mode: "center"
+            halign: "center"
+            elevation: 10
+            md_bg_color: 0.4, 0.48, 0.67, 1
+            left_action_items: [["arrow-left", lambda x: app.volver_pantalla_principal()]]
+            right_action_items: [['menu', lambda x: app.root.ids.nav_drawer.set_state("open")]]
+            font_size: "24dp"
+            font_style: "Caption"
+
+        BoxLayout:
+            size_y: self.minimum_height
+            size_hint: 1,0.1
+            padding: "5dp",0,0,0
+            orientation: 'horizontal'
+            LabelDeMedidas:
+                text: 'Fecha'
+            LabelDeMedidas:
+                text: 'F-Max'
+            LabelDeMedidas:
+                text: 'E-Max'
+            LabelDeMedidas:
+                text: 'Fuerza Flexion'
+            LabelDeMedidas:
+                text: 'Fuerza Extension'
+
+        #ClassTable:
+        #    id: table
+
+        RVEstudios:
+            size_hint_y: 0.7
+            id: rv
+
+        BoxLayout:
+            size_hint_y: 0.1
+            padding: 10
+            spacing: 10
+            orientation: 'horizontal'
+
+            MDFloatingActionButtonSpeedDial:
+                id: btn_medir
+                data: app.comandos
+                bg_color_root_button: 0.4, 0.48, 0.67, 1
+                #bg_color_stack_button: 0.4, 0.48, 0.67, 1
+                callback: root.nueva_medicion
+                label_text_color: 1,1,1,1
+                root_button_anim: True
+                bg_hint_color:  0.4, 0.48, 0.67, 1
+                opening_time: 0
+                closing_time: 0
+
