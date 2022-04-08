@@ -54,10 +54,10 @@ class PantallaPrincipal(MDScreen):
             print(mensaje)
 
     def add_patient_button_press(self):
-        self.ids.add_patient_image.source = 'add_pressed.png'
+        self.ids.add_patient_image.source = 'images/add_pressed.png'
 
     def add_patient_button_release(self):
-        self.ids.add_patient_image.source = 'add.png'
+        self.ids.add_patient_image.source = 'images/add.png'
         self.manager.current = 'pantalla_agregar_paciente'
 
     def bluetooth(self):

@@ -37,19 +37,19 @@ MDNavigationLayout:
                     id: avatar
                     size_hint: 1, None
                     size: self.size
-                    source: "logo.png"
+                    source: "images/logo.png"
 
             MDList:
                 OneLineAvatarListItem:
                     text: "Exportar a PDF"
                     on_release: root.ids.pantalla_paciente_seleccionado.generate_pdf()
                     ImageLeftWidget:
-                        source: "pdf.png"
+                        source: "images/pdf.png"
                 OneLineAvatarListItem:
                     text: "Exportar a Excel"
                     on_release: root.ids.pantalla_paciente_seleccionado.generate_csv()
                     ImageLeftWidget:
-                        source: "excel.png"
+                        source: "images/excel.png"
 
             BoxLayout:
 
@@ -82,7 +82,7 @@ MDNavigationLayout:
                     pos: self.pos
             size_hint: 1,0.1
             Image:
-                source: "icon.png"
+                source: "images/icon.png"
             Label:
                 text: "VitalGB"
                 font_name: "fonts/Ubuntu-B"
@@ -129,7 +129,7 @@ MDNavigationLayout:
             Image:
                 id: add_patient_image
                 size: "100dp", "100dp"
-                source: 'add.png'
+                source: 'images/add.png'
                 center_x: self.parent.center_x
                 center_y: self.parent.center_y
 
