@@ -5,6 +5,7 @@ from kivy.uix.label import Label
 from kivy.uix.popup import Popup
 from kivymd.uix.button import MDFlatButton, MDRaisedButton
 from kivymd.uix.dialog import MDDialog
+from translate import Translator
 
 
 class DialogoCargarAngulos(BoxLayout):
@@ -13,6 +14,17 @@ class DialogoCargarAngulos(BoxLayout):
 
 class DialogoCargarFuerza(BoxLayout):
     pass
+
+
+def traductor(mensaje):
+    mensaje = str(mensaje)
+    translator = Translator(to_lang='es')
+    try:
+        mensaje_translated = translator.translate(mensaje)
+    except:
+        return mensaje
+    else:
+        return mensaje_translated
 
 
 def crear_dialogos(tipo, **kwargs):

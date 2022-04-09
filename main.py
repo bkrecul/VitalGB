@@ -20,6 +20,7 @@ from vitalgb_com import Bluetooth
 from kivy.core.window import Window
 # from plyer import vibrator
 
+
 Window.softinput_mode = 'below_target'
 
 DEVICE_NAME = 'ESP32 BT'  # BTmin
@@ -65,7 +66,7 @@ class PantallaPrincipal(MDScreen):
             try:
                 self.recv_stream, self.send_stream = vitalgb_app.bluetooth_conection.get_socket_stream()
             except Exception as mensaje:
-                popup = PopUpException(f'{mensaje}')
+                popup = PopUpException(traductor(mensaje))
                 popup.open()
 
             else:
@@ -174,7 +175,7 @@ class PantallaPacienteSeleccionado(MDScreen):
                               size_hint=(0.7, 0.2))
                 popup.open()
             else:
-                popup = PopUpException(f'{mensaje}')
+                popup = PopUpException(traductor(mensaje))
                 popup.open()
         else:
             mensaje = PopUpExportSuccessful(path)
@@ -330,7 +331,7 @@ class PantallaPacienteSeleccionado(MDScreen):
         except Exception as mensaje:
             self.popup.dismiss()
             self.clock.cancel()
-            popup = PopUpException(f'{mensaje}')
+            popup = PopUpException(traductor(mensaje))
             popup.open()
         else:
             if len(self.stream) == 2 or self.popup.wanna_quit:
@@ -371,7 +372,7 @@ class PantallaPacienteSeleccionado(MDScreen):
         except Exception as mensaje:
             self.popup.dismiss()
             self.clock.cancel()
-            popup = PopUpException(f'{mensaje}')
+            popup = PopUpException(traductor(mensaje))
             popup.open()
         else:
             if len(self.stream) == 1:
