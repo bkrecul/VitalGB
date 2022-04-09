@@ -153,7 +153,6 @@ class PantallaPacienteSeleccionado(MDScreen):
     stream = []
     flexion = None
     extension = None
-    anterior = []
 
     def generate_pdf(self):
         try:
