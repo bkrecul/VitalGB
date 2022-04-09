@@ -233,6 +233,7 @@ class PantallaPacienteSeleccionado(MDScreen):
         vitalgb_app.planilla_personal.cargar_mediciones(self.nombre,self.apellido,self.ids.rv.data)
         self.ids.rv.refresh_from_data()
         self.ids.rv.viewclass.selection.clear()
+        self.ids.rv.viewclass.anterior.clear()
         try:
             self.ids.rv.ids.estudios.clear_selection()
         except IndexError:
@@ -489,17 +490,15 @@ class SelectableBox(RecycleDataViewBehavior, BoxLayout):
     def apply_selection(self, rv, index, is_selected):
         ''' Respond to the selection of items in the view. '''
         self.selected = is_selected
+        self.selection.clear()
         current = rv.data[index]
         if is_selected:
-            if (current not in self.selection) and (current not in self.anterior):
+            if current not in self.anterior:
                 self.anterior.clear()
-                self.selection.clear()
                 self.anterior.append(current)
                 self.selection.append(current)
             else:
-                self.selection.remove(current)
                 self.anterior.clear()
-                self.selection.clear()
                 vitalgb_app.root.ids.pantalla_paciente_seleccionado.ids.rv.ids.estudios.clear_selection()
 
         vitalgb_app.root.ids.pantalla_paciente_seleccionado.ids.btn_medir.close_stack()
