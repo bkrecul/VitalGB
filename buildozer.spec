@@ -36,7 +36,7 @@ version = 0.1
 
 # (list) Application requirements
 # comma separated e.g. requirements = sqlite3,kivy
-requirements = python3,kivy,android,pandas,reportlab,plyer,jnius,openpyxl,XlsxWriter,kivymd,sdl2_ttf==2.0.15,pillow
+requirements = python3,kivy,android,pandas,fpdf2,plyer,jnius,openpyxl,XlsxWriter,kivymd,sdl2_ttf==2.0.15,Pillow,Pygments,defusedxml,translate,requests,libretranslatepy,certifi,charset-normalizer,idna,lxml,urllib3
 
 # (str) Custom source folders for requirements
 # Sets custom source for any requirements with recipes
