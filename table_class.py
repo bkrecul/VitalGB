@@ -2,6 +2,15 @@ import fpdf
 
 
 class PDF(fpdf.FPDF):
+
+    def footer(self):
+        # Go to 1.5 cm from bottom
+        self.set_y(-15)
+        # Select Arial italic 8
+        self.set_font('Arial', 'I', 8)
+        # Print centered page number
+        self.cell(0, 10, 'Página %s' % self.page_no() + ' de {nb}', 0, 0, 'R')
+
     def create_table(self, table_data, title='', data_size=10, title_size=12, align_data='L', align_header='L',
                      cell_width='even', x_start='x_default', emphasize_data=[], emphasize_style=None,
                      emphasize_color=(0, 0, 0)):

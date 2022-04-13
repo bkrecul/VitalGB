@@ -38,7 +38,15 @@ class PlanillaPersonal:
             # self.data_frame.to_excel(full_path, index=False, header=True, engine='xlsxwriter',)
         if tipo_de_archivo == 'pdf':
             full_path = f"{working_directory}/reportes/{nombre}_{apellido}.pdf"
-            CrearReportePDF().crear_reporte(self.data_frame, full_path)
+
+            # Ejemplo de como deben ser la lista de datos del instituto:
+
+            instituto = ['DIAGNÓSTICO POR IMÁGENES', 'Hipólito Yrigoyen 384','TE: 0810 555 2553', 'www.sanatorioallende.com']
+            # formato: instituto = [<nombre_del_servicio>,<dirección>,<telefono>,<sitio_web>]
+            # Si no existe algun dato debe reemplazarse por None
+            encabezados = [None, 'Giuliano', '23/04/1995', 'DNI', '39204163', 'Masculino']
+
+            CrearReportePDF().crear_reporte(self.data_frame, full_path,encabezados, datos_del_instituto=instituto)
         return full_path
 
     def lectura(self, nombre, apellido) -> pandas.DataFrame:
