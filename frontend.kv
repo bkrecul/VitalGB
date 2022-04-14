@@ -40,16 +40,36 @@ MDNavigationLayout:
                     source: "images/logo.png"
 
             MDList:
-                OneLineAvatarListItem:
+                OneLineAvatarIconListItem:
                     text: "Exportar a PDF"
                     on_release: root.ids.pantalla_paciente_seleccionado.generate_pdf()
-                    ImageLeftWidget:
-                        source: "images/pdf.png"
-                OneLineAvatarListItem:
+                    IconLeftWidget:
+                        icon: "file-pdf-outline"
+                OneLineAvatarIconListItem:
                     text: "Exportar a Excel"
                     on_release: root.ids.pantalla_paciente_seleccionado.generate_csv()
-                    ImageLeftWidget:
-                        source: "images/excel.png"
+                    IconLeftWidget:
+                        icon: "file-excel-outline"
+                #OneLineAvatarListItem:
+                #    text: "Exportar a PDF"
+                #    on_release: root.ids.pantalla_paciente_seleccionado.generate_pdf()
+                #    ImageLeftWidget:
+                #        source: "images/pdf.png"
+                #OneLineAvatarListItem:
+                #    text: "Exportar a Excel"
+                #    on_release: root.ids.pantalla_paciente_seleccionado.generate_csv()
+                #    ImageLeftWidget:
+                #        source: "images/excel.png"
+                TwoLineAvatarIconListItem:
+                    text: "Completar datos"
+                    secondary_text: "para el informe PDF"
+                    IconLeftWidget:
+                        icon: "file-document-edit-outline"
+                TwoLineAvatarIconListItem:
+                    text: "Editar datos"
+                    secondary_text: "del paciente"
+                    IconLeftWidget:
+                        icon: "account-edit-outline"
 
             BoxLayout:
 
@@ -272,9 +292,6 @@ MDNavigationLayout:
                 text: 'Fuerza Flexion'
             LabelDeMedidas:
                 text: 'Fuerza Extension'
-
-        #ClassTable:
-        #    id: table
 
         RVEstudios:
             size_hint_y: 0.7
