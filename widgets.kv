@@ -137,6 +137,17 @@
         id: fuerza
         hint_text: "Esfuerzo medido"
 
+<DialogoObservaciones>
+    orientation: "vertical"
+    spacing: "12dp"
+    size_hint_y: None
+    height: "80dp"
+    ScrollView:
+        MDTextField:
+            id: observaciones
+            hint_text: "Observaciones"
+            multiline: True
+
 <PopUpException>
     size_hint: 0.7, 0.3
     title: "Error"

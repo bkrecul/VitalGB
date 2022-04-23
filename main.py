@@ -155,13 +155,20 @@ class PantallaPacienteSeleccionado(MDScreen):
     flexion = None
     extension = None
 
+    def pedir_observaciones(self):
+        self.dialog = crear_dialogos(4, funcion_aceptar=lambda x:self.generate_pdf())
+        self.dialog.buttons[0].on_release = self.dialog.dismiss
+        self.dialog.open()
+
     def generate_pdf(self):
+        observaciones = self.dialog.content_cls.ids.observaciones.text
         try:
-            vitalgb_app.planilla_personal.exportar('pdf', self.nombre, self.apellido, export_path)
+            vitalgb_app.planilla_personal.exportar('pdf', self.nombre, self.apellido, export_path, obs=observaciones)
         except:
             popup = Popup(title='Error', content=Label(text=f'No disponible aún.'),
                           size_hint=(0.7, 0.2))
             popup.open()
+        self.dialog.dismiss()
 
     def generate_csv(self):
         try:

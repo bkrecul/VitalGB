@@ -16,6 +16,10 @@ class DialogoCargarFuerza(BoxLayout):
     pass
 
 
+class DialogoObservaciones(BoxLayout):
+    pass
+
+
 def traductor(mensaje):
     mensaje = str(mensaje)
     translator = Translator(to_lang='es')
@@ -57,6 +61,13 @@ def crear_dialogos(tipo, **kwargs):
                                               text_color=(1,0,0,1),),
                                  MDRaisedButton(text="ACEPTAR", theme_text_color="Custom",
                                                 md_bg_color=(1,0,0,1), text_color=(1, 1, 1, 1),
+                                                on_release=kwargs.get('funcion_aceptar'))])
+    if tipo == 4:
+        return MDDialog(title='Añadir observaciones', type="custom", content_cls=DialogoObservaciones(),
+                        buttons=[MDFlatButton(text="CANCELAR", theme_text_color="Custom",
+                                              text_color=(0.4, 0.48, 0.67, 1), ),
+                                 MDRaisedButton(text="ACEPTAR", theme_text_color="Custom",
+                                                md_bg_color=(0.4, 0.48, 0.67, 1), text_color=(1, 1, 1, 1),
                                                 on_release=kwargs.get('funcion_aceptar'))])
 
 
