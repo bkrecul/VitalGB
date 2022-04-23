@@ -8,7 +8,7 @@ class CrearReportePDF:
     image_path = 'images/logo.png'
     encabezados = ['AUTOR:','PACIENTE:','FEC.NAC.:','TIPO DOCUMENTO:','NRO. DOCUMENTO:','SEXO:']
 
-    def crear_reporte(self, datos_de_mediciones: pandas.DataFrame, filepath, datos_encabezado, *args, **kwargs):
+    def crear_reporte(self, datos_de_mediciones: pandas.DataFrame, filepath, datos_encabezado, obs, *args, **kwargs):
         nombre_del_servicio = None
         all_data = self.formatear(datos_de_mediciones.to_dict())
 
@@ -89,6 +89,11 @@ class CrearReportePDF:
                     pdf.cell(w=46, h=5, txt=dato, border=0, align="L")
 
         pdf.cell(w=46, h=5, txt="", border=0, align="L", ln=1)
+
+        pdf.set_font("Helvetica", size=8, style="B")
+        pdf.cell(w=46, h=5, txt='OBSERVACIONES:', border=0, align="L", ln=1)
+        pdf.set_font("Helvetica", size=8)
+        pdf.multi_cell(w=184, h=5, txt=obs, border=0, align="L")
 
         pdf.create_table(table_data=selected_data, title='Resultados', cell_width='even')
         pdf.ln()

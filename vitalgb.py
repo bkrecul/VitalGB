@@ -15,7 +15,7 @@ class PlanillaPersonal:
     def __init__(self, file_location=""):
         self.file_location = file_location
 
-    def exportar(self, tipo_de_archivo, nombre, apellido, path)->str:
+    def exportar(self, tipo_de_archivo, nombre, apellido, path, **kwargs)->str:
         """Función que genera un archivo pdf o csv a partir de los datos internos y devuelve el path
         de la ubicación de este archivo generado."""
         self.data_frame = pandas.read_csv(f'{self.file_location}/VitalGB/pacientes/{nombre}_{apellido}.csv')
@@ -37,6 +37,7 @@ class PlanillaPersonal:
             writer.save()
             # self.data_frame.to_excel(full_path, index=False, header=True, engine='xlsxwriter',)
         if tipo_de_archivo == 'pdf':
+            obs = kwargs.get('obs')
             full_path = f"{working_directory}/reportes/{nombre}_{apellido}.pdf"
 
             # Ejemplo de como deben ser la lista de datos del instituto:
@@ -46,7 +47,7 @@ class PlanillaPersonal:
             # Si no existe algun dato debe reemplazarse por None
             encabezados = [None, 'Giuliano', '23/04/1995', 'DNI', '39204163', 'Masculino']
 
-            CrearReportePDF().crear_reporte(self.data_frame, full_path,encabezados, datos_del_instituto=instituto)
+            CrearReportePDF().crear_reporte(self.data_frame, full_path, encabezados, obs, datos_del_instituto=instituto)
         return full_path
 
     def lectura(self, nombre, apellido) -> pandas.DataFrame:
