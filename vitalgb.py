@@ -87,28 +87,31 @@ class PlanillaGeneral(PlanillaPersonal):
         super().__init__(file_location)
         try:
             self.pacientes = pandas.read_csv(f"{self.file_location}/VitalGB/pacientes.csv")
+            self.id = self.pacientes['id'].max() + 1
         except FileNotFoundError:
             working_directory = os.path.join(self.file_location, "VitalGB")
             if not os.path.exists(working_directory):
                 os.makedirs(working_directory)
                 os.makedirs(os.path.join(working_directory,"pacientes"))
-            self.headings = ["Nombre", "Apellido", "Edad", "Peso", "Sexo", "Patologia"]
+            self.headings = ["id", "Nombre", "Apellido", "Edad", "Peso", "Sexo", "Patologia"]
             self.data_frame = pandas.DataFrame([self.headings])
             self.data_frame.to_csv(f"{working_directory}/pacientes.csv", index=False, header=False)
+            self.id = 1
 
     def cargar_paciente(self, nombre, apellido, **kwargs):
         """ Función para la carga de un paciente nuevo dentro de VitalGB"""
-        self.informacion_del_paciente  = {'Nombre': [nombre], 'Apellido': [apellido], 'Edad': [kwargs.get("edad")],
-                                          'Peso': [kwargs.get("peso")], 'Sexo': [kwargs.get("sexo")],
-                                          'Patologia': [kwargs.get("patologia")]}
-        self.crear(self.file_location,nombre, apellido)
+        self.informacion_del_paciente  = {'id': self.id, 'Nombre': [nombre], 'Apellido': [apellido],
+                                          'Edad': [kwargs.get("edad")], 'Peso': [kwargs.get("peso")],
+                                          'Sexo': [kwargs.get("sexo")], 'Patologia': [kwargs.get("patologia")]}
+        self.crear(self.file_location, nombre, apellido)
+        self.id += 1
         self.data_frame = pandas.DataFrame(self.informacion_del_paciente)
         self.data_frame.to_csv(f'{self.file_location}/VitalGB/pacientes.csv', mode="a", index=False, header=False)
 
     def devolver_pacientes(self) -> list:
         """ Función que devuelve los nombres y apellidos de los pacientes, en formato de lista. """
         self.pacientes = pandas.read_csv(f"{self.file_location}/VitalGB/pacientes.csv")
-        self.nombres = [{'text': nombre + " " + apellido} for nombre, apellido in
+        nombres = [{'text': nombre + " " + apellido} for nombre, apellido in
                         zip(self.pacientes['Nombre'].tolist(), self.pacientes['Apellido'].tolist())]
-        return self.nombres
+        return nombres
 
