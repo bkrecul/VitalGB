@@ -161,18 +161,31 @@ class PantallaPacienteSeleccionado(MDScreen):
         self.dialog.open()
 
     def generate_pdf(self):
-        observaciones = self.dialog.content_cls.ids.observaciones.text
         try:
-            vitalgb_app.planilla_personal.exportar('pdf', self.nombre, self.apellido, export_path, obs=observaciones)
-        except:
-            popup = Popup(title='Error', content=Label(text=f'No disponible aún.'),
-                          size_hint=(0.7, 0.2))
-            popup.open()
-        self.dialog.dismiss()
+            observaciones = self.dialog.content_cls.ids.observaciones.text
+            nombre_completo = vitalgb_app.planilla_general.devolver_paciente(self.id)
+            path = vitalgb_app.planilla_personal.exportar(
+                'pdf', self.id, nombre_completo, export_path, obs=observaciones)
+            self.dialog.dismiss()
+        except Exception as mensaje:
+            if ('errno 13' or 'permission denied') in str(mensaje).lower():
+                request_permissions([Permission.WRITE_EXTERNAL_STORAGE,
+                                     Permission.READ_EXTERNAL_STORAGE])
+                popup = Popup(title='Error',
+                              content=Label(text=f'No se pudo exportar, por favor\nconceda los permisos.'),
+                              size_hint=(0.7, 0.2))
+                popup.open()
+            else:
+                popup = PopUpException(traductor(mensaje))
+                popup.open()
+        else:
+            mensaje = PopUpExportSuccessful(path)
+            mensaje.open()
 
     def generate_csv(self):
         try:
-            path = vitalgb_app.planilla_personal.exportar('csv', self.nombre, self.apellido, export_path)
+            nombre_completo = vitalgb_app.planilla_general.devolver_paciente(self.id)
+            path = vitalgb_app.planilla_personal.exportar('csv', self.id, nombre_completo, export_path)
         except Exception as mensaje:
             if ('errno 13' or 'permission denied') in str(mensaje).lower():
                 request_permissions([Permission.WRITE_EXTERNAL_STORAGE,
@@ -194,12 +207,12 @@ class PantallaPacienteSeleccionado(MDScreen):
         la RecycleView (lista desplazable) que muestra los datos."""
         while vitalgb_app.patient_selected is None:
             pass
-        self.ids.titulo_nombre_paciente.text = vitalgb_app.patient_selected
-        self.nombre = vitalgb_app.patient_selected.split()[0]
-        self.apellido = vitalgb_app.patient_selected.split()[1]
+        self.id = vitalgb_app.patient_selected
+        nombre_completo = vitalgb_app.planilla_general.devolver_paciente(self.id)
+        self.ids.titulo_nombre_paciente.text = nombre_completo
         vitalgb_app.patient_selected = None
         self.ids.rv.data.clear()
-        self.data = vitalgb_app.planilla_personal.lectura(self.nombre, self.apellido)
+        self.data = vitalgb_app.planilla_personal.lectura(self.id)
         self.ids.rv.data = self.data.to_dict(orient='records')
         self.ids.rv.refresh_from_data()
         vitalgb_app.root.ids.nav_drawer.swipe_edge_width = 50
@@ -237,7 +250,7 @@ class PantallaPacienteSeleccionado(MDScreen):
         self.guardado()
 
     def guardado(self):
-        vitalgb_app.planilla_personal.cargar_mediciones(self.nombre,self.apellido,self.ids.rv.data)
+        vitalgb_app.planilla_personal.cargar_mediciones(self.id, self.ids.rv.data)
         self.ids.rv.refresh_from_data()
         self.ids.rv.viewclass.selection.clear()
         self.ids.rv.viewclass.anterior.clear()
@@ -459,7 +472,7 @@ class SelectableLabel(RecycleDataViewBehavior, Label):
         ''' Respond to the selection of items in the view. '''
         self.selected = is_selected
         if is_selected:
-            vitalgb_app.patient_selected = rv.data[index]['text']
+            vitalgb_app.patient_selected = rv.data[index]['id']
             vitalgb_app.root.ids.screen_manager.current = "pantalla_paciente_seleccionado"
 
 
