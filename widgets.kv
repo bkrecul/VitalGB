@@ -148,6 +148,42 @@
             hint_text: "Observaciones"
             multiline: True
 
+<DialogoCargarDatosInstitucionales>
+    orientation: "vertical"
+    spacing: "12dp"
+    size_hint_y: None
+    height: "340dp"
+    MDTextField:
+        id: nombre_profesional
+        hint_text: "Su Nombre"
+        write_tab: False
+        on_text_validate: root.ids.nombre_servicio.focus = True
+    MDTextField:
+        id: nombre_servicio
+        hint_text: "Nombre del servicio"
+        helper_text: "e.g. Servicio Fisioterapia"
+        helper_text_mode: "on_focus"
+        write_tab: False
+        on_text_validate: root.ids.direccion.focus = True
+    MDTextField:
+        id: direccion
+        hint_text: "Dirección del Instituto"
+        write_tab: False
+        on_text_validate: root.ids.telefono.focus = True
+    MDTextField:
+        id: telefono
+        hint_text: "Telefono"
+        write_tab: False
+        on_text_validate: root.ids.sitio_web.focus = True
+    MDTextField:
+        id: sitio_web
+        hint_text: "Sitio Web"
+        write_tab: False
+        on_text_validate: self.focus = False
+    MDRaisedButton:
+        text: 'Agregar Imagen'
+        on_release: root.seleccionar_imagen()
+
 <PopUpException>
     size_hint: 0.7, 0.3
     title: "Error"

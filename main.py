@@ -1,4 +1,5 @@
 import time
+import pandas
 from kivy.clock import Clock
 from kivy.config import Config
 from kivy.metrics import dp
@@ -18,6 +19,7 @@ from PupUps import *
 from vitalgb import PlanillaPersonal, PlanillaGeneral
 from vitalgb_com import Bluetooth
 from kivy.core.window import Window
+
 # from plyer import vibrator
 
 
@@ -156,7 +158,7 @@ class PantallaPacienteSeleccionado(MDScreen):
     extension = None
 
     def pedir_observaciones(self):
-        self.dialog = crear_dialogos(4, funcion_aceptar=lambda x:self.generate_pdf())
+        self.dialog = crear_dialogos(4, funcion_aceptar=lambda x: self.generate_pdf())
         self.dialog.buttons[0].on_release = self.dialog.dismiss
         self.dialog.open()
 
@@ -229,17 +231,17 @@ class PantallaPacienteSeleccionado(MDScreen):
                 self.popup = PopUpMeasuring(self.clock)
                 self.popup.open()
             else:
-                self.dialog = crear_dialogos(0, funcion_aceptar=lambda x:self.pedir_angulos())
+                self.dialog = crear_dialogos(0, funcion_aceptar=lambda x: self.pedir_angulos())
                 self.dialog.buttons[0].on_release = self.dialog.dismiss
                 self.dialog.open()
         if instance.icon == 'weight-kilogram':
             self.ids.btn_medir.close_stack()
-            self.popup = PopUpEleccionDeFuerza(lambda x:self.eleccion_fuerza(x))
+            self.popup = PopUpEleccionDeFuerza(lambda x: self.eleccion_fuerza(x))
             self.popup.open()
         if instance.icon == 'delete':
             if not not self.ids.rv.viewclass.selection:
                 self.ids.btn_medir.close_stack()
-                self.dialog = crear_dialogos(3, funcion_aceptar=lambda x:self.delete())
+                self.dialog = crear_dialogos(3, funcion_aceptar=lambda x: self.delete())
                 self.dialog.buttons[0].on_release = self.dialog.dismiss
                 self.dialog.open()
 
@@ -266,19 +268,19 @@ class PantallaPacienteSeleccionado(MDScreen):
             self.popup.text = ''
             self.popup.open()
         else:
-            self.dialog = crear_dialogos(0, funcion_aceptar=lambda x:self.pedir_fuerza(eleccion))
+            self.dialog = crear_dialogos(0, funcion_aceptar=lambda x: self.pedir_fuerza(eleccion))
             self.dialog.buttons[0].on_release = self.dialog.dismiss
             self.dialog.open()
 
     def pedir_fuerza(self, eleccion):
         self.dialog.dismiss()
-        self.dialog = crear_dialogos(2, funcion_aceptar=lambda x:self.cargar_fuerza(eleccion))
+        self.dialog = crear_dialogos(2, funcion_aceptar=lambda x: self.cargar_fuerza(eleccion))
         self.dialog.buttons[0].on_release = self.dialog.dismiss
         self.dialog.open()
 
     def pedir_angulos(self):
         self.dialog.dismiss()
-        self.dialog = crear_dialogos(1, funcion_aceptar=lambda x:self.cargar_angulos())
+        self.dialog = crear_dialogos(1, funcion_aceptar=lambda x: self.cargar_angulos())
         self.dialog.buttons[0].on_release = self.dialog.dismiss
         self.dialog.open()
 
@@ -301,7 +303,7 @@ class PantallaPacienteSeleccionado(MDScreen):
             self.guardado()
         self.dialog.dismiss()
 
-    def cargar_fuerza(self,eleccion):
+    def cargar_fuerza(self, eleccion):
         if len(self.ids.rv.viewclass.selection) == 1:
             index = self.ids.rv.data.index(self.ids.rv.viewclass.selection[0])
             self.ids.rv.viewclass.selection[0][eleccion] = self.dialog.content_cls.ids.fuerza.text
@@ -586,6 +588,27 @@ class MainApp(MDApp):
 
     def volver_pantalla_principal(self):
         self.root.ids.screen_manager.current = "pantalla_principal"
+
+    def cargar_datos_institucionales(self):
+        self.dialog = crear_dialogos(5, funcion_aceptar=lambda x: self._guardar_datos_institucionales())
+        data = self.planilla_personal.lectura_datos_institucionales()
+        index = 0
+        for name_field in self.dialog.content_cls.ids:
+            if data[index] is not None:
+                self.dialog.content_cls.ids[name_field].text = data[index]
+                index += 1
+        self.dialog.buttons[0].on_release = self.dialog.dismiss
+        self.dialog.open()
+
+    def _guardar_datos_institucionales(self):
+        headers = ['nombre_profesional',
+                   'nombre_del_servicio',
+                   'direccion',
+                   'telefono',
+                   'sitio_web']
+        df = pandas.DataFrame({header: [self.dialog.content_cls.ids[field].text]
+                               for (header, field) in zip(headers, self.dialog.content_cls.ids)})
+        df.to_csv(f"{working_path}/VitalGB/instituto.csv", index=False)
 
 
 vitalgb_app = MainApp()

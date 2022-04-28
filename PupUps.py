@@ -20,6 +20,43 @@ class DialogoObservaciones(BoxLayout):
     pass
 
 
+class DialogoCargarDatosInstitucionales(BoxLayout):
+
+    def seleccionar_imagen(self):
+        # TODO: Permitir elegir imagen en dialogo de android
+        if platform == 'android':
+            from jnius import autoclass
+            from jnius import cast
+            try:
+                StrictMode = autoclass('android.os.StrictMode')
+                StrictMode.disableDeathOnFileUriExposure()
+                PythonActivity = autoclass('org.kivy.android.PythonActivity')
+
+                Intent = autoclass('android.content.Intent')
+                JString = autoclass('java.lang.String')
+
+                Uri = autoclass('android.net.Uri')
+                # File = autoclass('java.io.File')
+                shareIntent = Intent(Intent.ACTION_OPEN_DOCUMENT)  # ACTION_OPEN_DOCUMENT #ACTION_SEND #ACTION_VIEW
+                # imageFile = File(self.path)
+                # uri = Uri.fromFile(imageFile)
+                # shareIntent.setData(uri)
+                shareIntent.setType("*/*")
+                # parcelable = cast('android.os.Parcelable', uri)
+                shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                # shareIntent.putExtra(Intent.EXTRA_STREAM, parcelable)
+                currentActivity = cast('android.app.Activity', PythonActivity.mActivity)
+                self.path = currentActivity.startActivity(shareIntent)
+            except Exception as mensaje:
+                popup = Popup(title='Ops!', content=Label(text=f'Algo salió mal.\n{mensaje}'),
+                              size_hint=(0.7, 0.2))
+                popup.open()
+            else:
+                popup = Popup(title='Ops!', content=Label(text=f'{self.path}Algo salió bien.'),
+                              size_hint=(0.7, 0.2))
+                popup.open()
+            self.dismiss()
+
 def traductor(mensaje):
     mensaje = str(mensaje)
     translator = Translator(to_lang='es')
@@ -66,6 +103,14 @@ def crear_dialogos(tipo, **kwargs):
         return MDDialog(title='Añadir observaciones', type="custom", content_cls=DialogoObservaciones(),
                         buttons=[MDFlatButton(text="CANCELAR", theme_text_color="Custom",
                                               text_color=(0.4, 0.48, 0.67, 1), ),
+                                 MDRaisedButton(text="ACEPTAR", theme_text_color="Custom",
+                                                md_bg_color=(0.4, 0.48, 0.67, 1), text_color=(1, 1, 1, 1),
+                                                on_release=kwargs.get('funcion_aceptar'))])
+    if tipo == 5:
+        return MDDialog(title='Agregar datos institucionales', type='custom',
+                        content_cls=DialogoCargarDatosInstitucionales(),
+                        buttons=[MDFlatButton(text="CANCELAR", theme_text_color="Custom",
+                                              text_color=(0.4, 0.48, 0.67, 1)),
                                  MDRaisedButton(text="ACEPTAR", theme_text_color="Custom",
                                                 md_bg_color=(0.4, 0.48, 0.67, 1), text_color=(1, 1, 1, 1),
                                                 on_release=kwargs.get('funcion_aceptar'))])
