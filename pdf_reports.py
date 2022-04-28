@@ -8,7 +8,7 @@ class CrearReportePDF:
     image_path = 'images/logo.png'
     encabezados = ['AUTOR:','PACIENTE:','FEC.NAC.:','TIPO DOCUMENTO:','NRO. DOCUMENTO:','SEXO:']
 
-    def crear_reporte(self, datos_de_mediciones: pandas.DataFrame, filepath, datos_encabezado, obs, *args, **kwargs):
+    def crear_reporte(self, datos_de_mediciones: pandas.DataFrame, filepath, datos_encabezado, obs, datos_instituto, **kwargs):
         nombre_del_servicio = None
         all_data = self.formatear(datos_de_mediciones.to_dict())
 
@@ -23,9 +23,11 @@ class CrearReportePDF:
         pdf.alias_nb_pages()
         pdf.add_page()
 
-        if "datos_del_instituto" in kwargs:
-            datos_del_instituto = kwargs.get("datos_del_instituto")
-            nombre_del_servicio = datos_del_instituto[0]
+        if datos_instituto[1] is not None:
+            nombre_del_servicio = datos_instituto[1]
+        if datos_instituto[0] is not None:
+            datos_encabezado[0] = datos_instituto.pop(0)
+
         if "image" in kwargs:
             self.image_path = kwargs.get("image")
         img = Image.open(self.image_path)
@@ -42,7 +44,7 @@ class CrearReportePDF:
         index = 0
         while pdf.y < pdf.t_margin + h + 3:
             try:
-                dato = datos_del_instituto[index]
+                dato = datos_instituto[index]
             except IndexError:
                 break
             except UnboundLocalError:
@@ -63,13 +65,13 @@ class CrearReportePDF:
             pdf.cell(w=46, h=5, txt="SERVICIO:", border=0, align="L")
             pdf.set_font("Helvetica", size=8)
             if datos_encabezado[0] is None:
-                pdf.cell(w=46, h=5, txt=f"{nombre_del_servicio}", border=0, align="L")
+                pdf.cell(w=46, h=5, txt=f"{nombre_del_servicio.upper()}", border=0, align="L")
             else:
-                pdf.cell(w=46, h=5, txt=f"{nombre_del_servicio}", border=0, align="L",ln=1)
+                pdf.cell(w=46, h=5, txt=f"{nombre_del_servicio.upper()}", border=0, align="L",ln=1)
                 pdf.set_font("Helvetica", size=8, style="B")
                 pdf.cell(w=46, h=5, txt=f"{self.encabezados[0]}", border=0, align="L")
                 pdf.set_font("Helvetica", size=8)
-                pdf.cell(w=46, h=5, txt=f"{datos_encabezado[0]}", border=0, align="L")
+                pdf.cell(w=46, h=5, txt=f"{datos_encabezado[0].upper()}", border=0, align="L")
 
         pdf.set_font("Helvetica", size=8, style="B")
         pdf.cell(w=46, h=5, txt=f"FECHA: ", border=0, align="L")
@@ -84,16 +86,16 @@ class CrearReportePDF:
                 pdf.cell(w=46, h=5, txt=encabezado, border=0, align="L")
                 pdf.set_font("Helvetica", size=8)
                 if data_counter % 2 == 0:
-                    pdf.cell(w=46, h=5, txt=dato, border=0, align="L", ln=1)
+                    pdf.cell(w=46, h=5, txt=dato.upper(), border=0, align="L", ln=1)
                 else:
-                    pdf.cell(w=46, h=5, txt=dato, border=0, align="L")
+                    pdf.cell(w=46, h=5, txt=dato.upper(), border=0, align="L")
 
         pdf.cell(w=46, h=5, txt="", border=0, align="L", ln=1)
 
         pdf.set_font("Helvetica", size=8, style="B")
         pdf.cell(w=46, h=5, txt='OBSERVACIONES:', border=0, align="L", ln=1)
         pdf.set_font("Helvetica", size=8)
-        pdf.multi_cell(w=184, h=5, txt=obs, border=0, align="L")
+        pdf.multi_cell(w=184, h=5, txt=obs.upper(), border=0, align="L")
 
         pdf.create_table(table_data=selected_data, title='Resultados', cell_width='even')
         pdf.ln()

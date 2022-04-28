@@ -33,16 +33,26 @@ class PlanillaPersonal:
         if tipo_de_archivo == 'pdf':
             obs = kwargs.get('obs')
             full_path = f"{working_directory}/reportes/{nombre_archivo}.pdf"
-
+            instituto = self.lectura_datos_institucionales()
             # Ejemplo de como deben ser la lista de datos del instituto:
-
-            instituto = ['DIAGNÓSTICO POR IMÁGENES', 'Hipólito Yrigoyen 384','TE: 0810 555 2553', 'www.sanatorioallende.com']
             # formato: instituto = [<nombre_del_servicio>,<dirección>,<telefono>,<sitio_web>]
             # Si no existe algun dato debe reemplazarse por None
             encabezados = [None, 'Giuliano', '23/04/1995', 'DNI', '39204163', 'Masculino']
 
-            CrearReportePDF().crear_reporte(self.data_frame, full_path, encabezados, obs, datos_del_instituto=instituto)
+            CrearReportePDF().crear_reporte(self.data_frame, full_path, encabezados, obs, instituto)
         return full_path
+
+    def lectura_datos_institucionales(self):
+        try:
+            data = pandas.read_csv(f"{self.file_location}/VitalGB/instituto.csv", keep_default_na=False)
+        except FileNotFoundError:
+            return [None, None, None, None, None]
+        else:
+            return [data['nombre_profesional'].tolist()[0].title(),
+                    data['nombre_del_servicio'].tolist()[0].title(),
+                    data['direccion'].tolist()[0].title(),
+                    data['telefono'].tolist()[0],
+                    data['sitio_web'].tolist()[0].lower()]
 
     def lectura(self, id) -> pandas.DataFrame:
         """Función que devuelve los datos del archivo de planilla personal."""
