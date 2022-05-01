@@ -107,7 +107,7 @@ def crear_dialogos(tipo, **kwargs):
                                                 md_bg_color=(0.4, 0.48, 0.67, 1), text_color=(1, 1, 1, 1),
                                                 on_release=kwargs.get('funcion_aceptar'))])
     if tipo == 5:
-        return MDDialog(title='Agregar datos institucionales', type='custom',
+        return MDDialog(title='Agregar datos institucionales', type='custom', auto_dismiss=False,
                         content_cls=DialogoCargarDatosInstitucionales(),
                         buttons=[MDFlatButton(text="CANCELAR", theme_text_color="Custom",
                                               text_color=(0.4, 0.48, 0.67, 1)),
