@@ -92,12 +92,14 @@ class PlanillaGeneral(PlanillaPersonal):
         try:
             pacientes = pandas.read_csv(f"{self.file_location}/VitalGB/pacientes.csv")
             self.id = pacientes['id'].max() + 1
+            if pandas.isna(self.id):
+                self.id = 1
         except FileNotFoundError:
             working_directory = os.path.join(self.file_location, "VitalGB")
             if not os.path.exists(working_directory):
                 os.makedirs(working_directory)
                 os.makedirs(os.path.join(working_directory,"pacientes"))
-            self.headings = ["id", "Nombre", "Apellido", "Edad", "Peso", "Sexo", "Patologia"]
+            self.headings = ["id", "Nombre", "Apellido", "DNI", "Sexo", "Fecha de Nacimiento"]
             self.data_frame = pandas.DataFrame([self.headings])
             self.data_frame.to_csv(f"{working_directory}/pacientes.csv", index=False, header=False)
             self.id = 1
@@ -105,8 +107,8 @@ class PlanillaGeneral(PlanillaPersonal):
     def cargar_paciente(self, nombre, apellido, **kwargs):
         """ Función para la carga de un paciente nuevo dentro de VitalGB"""
         self.informacion_del_paciente  = {'id': self.id, 'Nombre': [nombre], 'Apellido': [apellido],
-                                          'Edad': [kwargs.get("edad")], 'Peso': [kwargs.get("peso")],
-                                          'Sexo': [kwargs.get("sexo")], 'Patologia': [kwargs.get("patologia")]}
+                                          'DNI': [kwargs.get("dni")], 'Sexo': [kwargs.get("sexo")],
+                                          'Fecha de Nacimiento': [kwargs.get("nacimiento")]}
         self.crear(self.file_location, self.id)
         self.id += 1
         self.data_frame = pandas.DataFrame(self.informacion_del_paciente)

@@ -50,16 +50,6 @@ MDNavigationLayout:
                     on_release: root.ids.pantalla_paciente_seleccionado.generate_csv()
                     IconLeftWidget:
                         icon: "file-excel-outline"
-                #OneLineAvatarListItem:
-                #    text: "Exportar a PDF"
-                #    on_release: root.ids.pantalla_paciente_seleccionado.generate_pdf()
-                #    ImageLeftWidget:
-                #        source: "images/pdf.png"
-                #OneLineAvatarListItem:
-                #    text: "Exportar a Excel"
-                #    on_release: root.ids.pantalla_paciente_seleccionado.generate_csv()
-                #    ImageLeftWidget:
-                #        source: "images/excel.png"
                 TwoLineAvatarIconListItem:
                     text: "Completar datos"
                     secondary_text: "para el informe PDF"
@@ -206,45 +196,73 @@ MDNavigationLayout:
                 id: entrada_apellido
                 text_color_normal: 0,0,0,1
                 write_tab: False
-                on_text_validate: root.ids.entrada_edad.focus = True
+                on_text_validate: root.ids.entrada_dni.focus = True
 
-        # ==== Label e Input para Edad y Peso ====
+        # ==== Label e Input para Tipo y DNI ====
 
-            MDBoxLayout:
-                orientation: 'horizontal'
-                adaptive_height: True
-                spacing: dp(15)
-                MDTextField:
-                    hint_text: "Edad"
-                    id: entrada_edad
-                    write_tab: False
-                    input_type: 'number'
-                    input_filter: 'int'
-                    on_text_validate: root.ids.entrada_peso.focus = True
+            #MDBoxLayout:
+            #    orientation: 'horizontal'
+            #    adaptive_height: True
+            #    spacing: dp(15)
+            #    MDTextField:
+            #        icon_right: "arrow-down-drop-circle-outline"
+            #        hint_text: "Tipo Documento"
+            #        id: entrada_documento
+            #        write_tab: False
+            #        on_focus: root.open_menu()
+            #        on_text_validate: root.menu.dismiss() ## Descomentar lo anterior y tabear lo posterior para agregar tipo de documento
+            MDTextField:
+                hint_text: "DNI"
+                input_type: 'number'
+                write_tab: False
+                input_filter: 'int'
+                id: entrada_dni
+                on_text_validate: root.ids.entrada_sexo.focus = True
 
-                MDTextField:
-                    hint_text: "Peso"
-                    input_type: 'number'
-                    write_tab: False
-                    input_filter: 'int'
-                    id: entrada_peso
-                    on_text_validate: root.ids.entrada_sexo.focus = True
-
+            # === Menu dropdown de sexo ===
 
             MDTextField:
                 icon_right: "arrow-down-drop-circle-outline"
                 hint_text: "Sexo"
                 id: entrada_sexo
                 write_tab: False
-                on_focus: root.open_menu()
+                on_focus: root.open_menu_sexo()
                 on_text_validate: root.menu.dismiss()
 
-            ScrollView:
-                size_hint_y: None
+            # == Entrada Fecha de Nacimiento ==
+
+            MDLabel:
+                text: 'Fecha de Nacimiento'
+                theme_text_color: 'Secondary'
+
+            MDBoxLayout:
+                orientation: 'horizontal'
+                adaptive_height: True
+                spacing: dp(15)
+
                 MDTextField:
-                    multiline: True
-                    hint_text: "Patologia"
-                    id: entrada_patologia
+                    hint_text: "Día"
+                    id: entrada_dia
+                    write_tab: False
+                    input_type: 'number'
+                    input_filter: 'int'
+                    on_text: if len(self.text) == 2: root.ids.entrada_mes.focus = True
+                    on_text_validate: root.ids.entrada_mes.focus = True
+                MDTextField:
+                    hint_text: "Mes"
+                    id: entrada_mes
+                    write_tab: False
+                    input_type: 'number'
+                    input_filter: 'int'
+                    on_text: if len(self.text) == 2: root.ids.entrada_year.focus = True
+                    on_text_validate: root.ids.entrada_year.focus = True
+                MDTextField:
+                    hint_text: "Año"
+                    id: entrada_year
+                    write_tab: False
+                    input_type: 'number'
+                    input_filter: 'int'
+                    on_text: if len(self.text) == 4: root.ids.entrada_year.focus = False
 
         AnchorLayout:
             anchor_y: "center"

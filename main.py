@@ -91,7 +91,7 @@ class PantallaAgregarPaciente(MDScreen):
     def on_pre_enter(self, *args):
         sexos = ['Femenino', 'Masculino', 'Otro']
         iconos = ['human-female', 'human-male', '']
-        menu_items = [
+        menu_sexo_items = [
             {
                 "viewclass": "IconListItem",
                 "icon": icono,
@@ -99,10 +99,10 @@ class PantallaAgregarPaciente(MDScreen):
                 "text": sexo,
                 "on_release": lambda x=sexo: self.set_sexo(x),
             } for sexo, icono in zip(sexos, iconos)]
-        self.menu = MDDropdownMenu(
+        self.menu_sexo = MDDropdownMenu(
             ver_growth="up",
             caller=self.ids.entrada_sexo,
-            items=menu_items,
+            items=menu_sexo_items,
             position="auto",
             width_mult=4,
             opening_transition="in_quint",
@@ -112,15 +112,19 @@ class PantallaAgregarPaciente(MDScreen):
         # Leer los datos de las entradas
         nombre = self.ids.entrada_nombre.text.title()
         apellido = self.ids.entrada_apellido.text.title()
-        edad = self.ids.entrada_edad.text
-        peso = self.ids.entrada_peso.text
-        patologia = self.ids.entrada_patologia.text
+        dni = self.ids.entrada_dni.text
+        try:
+            fecha_nacimiento = f'{int(self.ids.entrada_dia.text):02d}/' \
+                               f'{int(self.ids.entrada_mes.text):02d}/' \
+                               f'{self.ids.entrada_year.text}'
+        except ValueError:
+            fecha_nacimiento = ""
         sexo = self.ids.entrada_sexo.text
         # Comprobar que estén llenos los campos obligatorios
         if nombre != "" and apellido != "":
             # Si es así, cargarlos
-            vitalgb_app.planilla_general.cargar_paciente(nombre, apellido, edad=edad,
-                                                         patologia=patologia, peso=peso, sexo=sexo)
+            vitalgb_app.planilla_general.cargar_paciente(nombre, apellido, dni=dni, sexo=sexo,
+                                                         nacimiento=fecha_nacimiento)
             self.manager.current = "pantalla_principal"
         else:
             # Sino, mostrar un mensaje
@@ -131,18 +135,19 @@ class PantallaAgregarPaciente(MDScreen):
     def limpiar_inputs(self):
         self.ids.entrada_nombre.text = ""
         self.ids.entrada_apellido.text = ""
-        self.ids.entrada_edad.text = ""
-        self.ids.entrada_peso.text = ""
-        self.ids.entrada_patologia.text = ""
+        self.ids.entrada_dni.text = ""
+        self.ids.entrada_dia.text = ""
+        self.ids.entrada_mes.text = ""
+        self.ids.entrada_year.text = ""
         self.ids.entrada_sexo.text = ""
 
-    def open_menu(self):
+    def open_menu_sexo(self):
         if self.ids.entrada_sexo.focus:
-            self.menu.open()
+            self.menu_sexo.open()
 
     def set_sexo(self, sexo):
         self.ids.entrada_sexo.text = sexo
-        self.menu.dismiss()
+        self.menu_sexo.dismiss()
 
     def on_leave(self, *args):
         self.limpiar_inputs()
