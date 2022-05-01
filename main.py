@@ -20,8 +20,6 @@ from vitalgb import PlanillaPersonal, PlanillaGeneral
 from vitalgb_com import Bluetooth
 from kivy.core.window import Window
 
-# from plyer import vibrator
-
 
 Window.softinput_mode = 'below_target'
 
@@ -30,6 +28,7 @@ DEVICE_NAME = 'ESP32 BT'  # BTmin
 if platform == 'android':
     from android.storage import app_storage_path, primary_external_storage_path
     from android.permissions import request_permissions, Permission
+    from plyer import vibrator
 
     request_permissions([Permission.WRITE_EXTERNAL_STORAGE,
                          Permission.READ_EXTERNAL_STORAGE])
@@ -609,6 +608,7 @@ class MainApp(MDApp):
         df = pandas.DataFrame({header: [self.dialog.content_cls.ids[field].text]
                                for (header, field) in zip(headers, self.dialog.content_cls.ids)})
         df.to_csv(f"{working_path}/VitalGB/instituto.csv", index=False)
+        self.dialog.dismiss()
 
 
 vitalgb_app = MainApp()
