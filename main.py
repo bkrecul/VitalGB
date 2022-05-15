@@ -15,6 +15,10 @@ from kivymd.uix.boxlayout import MDBoxLayout
 from kivymd.uix.list import OneLineIconListItem
 from kivymd.uix.menu import MDDropdownMenu
 from kivymd.uix.screen import MDScreen
+# Delete often
+from kivymd.uix.filemanager import MDFileManager
+from kivymd.toast import toast
+
 from PupUps import *
 from vitalgb import PlanillaPersonal, PlanillaGeneral
 from vitalgb_com import Bluetooth
@@ -107,6 +111,20 @@ class PantallaAgregarPaciente(MDScreen):
             width_mult=4,
             opening_transition="in_quint",
         )
+        if vitalgb_app.patient_selected is not None:
+            info = vitalgb_app.planilla_general.devolver_info_paciente(vitalgb_app.patient_selected)
+            self.ids.title.title = 'Editar Paciente'
+            self.ids.entrada_nombre.text = info[1]
+            self.ids.entrada_apellido.text = info[2]
+            self.ids.entrada_dni.text = info[3]
+            self.ids.entrada_sexo.text = info[4]
+            if info[5] != '':
+                fecha = info[5].split('/')
+                self.ids.entrada_dia.text = fecha[0]
+                self.ids.entrada_mes.text = fecha[1]
+                self.ids.entrada_year.text = fecha[2]
+        else:
+            self.ids.title.title = 'Nuevo Paciente'
 
     def crear_paciente(self):
         # Leer los datos de las entradas
@@ -123,9 +141,15 @@ class PantallaAgregarPaciente(MDScreen):
         # Comprobar que estén llenos los campos obligatorios
         if nombre != "" and apellido != "":
             # Si es así, cargarlos
-            vitalgb_app.planilla_general.cargar_paciente(nombre, apellido, dni=dni, sexo=sexo,
-                                                         nacimiento=fecha_nacimiento)
-            self.manager.current = "pantalla_principal"
+            if vitalgb_app.patient_selected is None:
+                vitalgb_app.planilla_general.cargar_paciente(nombre, apellido, dni=dni, sexo=sexo,
+                                                             nacimiento=fecha_nacimiento)
+                self.manager.current = "pantalla_principal"
+            else:
+                vitalgb_app.planilla_general.guardar_cambios_paciente(vitalgb_app.patient_selected,
+                                                                      nombre, apellido, dni=dni, sexo=sexo,
+                                                                      nacimiento=fecha_nacimiento)
+                self.manager.current = "pantalla_paciente_seleccionado"
         else:
             # Sino, mostrar un mensaje
             popup = Popup(title='Error', content=Label(text='    Los campos Nombre\ny Apellido son obligatorios'),
@@ -170,8 +194,9 @@ class PantallaPacienteSeleccionado(MDScreen):
         try:
             observaciones = self.dialog.content_cls.ids.observaciones.text
             nombre_completo = vitalgb_app.planilla_general.devolver_paciente(self.id)
+            info = vitalgb_app.planilla_general.devolver_info_paciente(self.id)
             path = vitalgb_app.planilla_personal.exportar(
-                'pdf', self.id, nombre_completo, export_path, obs=observaciones)
+                'pdf', self.id, nombre_completo, export_path, obs=observaciones, info=info)
             self.dialog.dismiss()
         except Exception as mensaje:
             if ('errno 13' or 'permission denied') in str(mensaje).lower():
@@ -211,6 +236,7 @@ class PantallaPacienteSeleccionado(MDScreen):
         """ Al pre-entrar se lee una variable de la aplicación que contiene el nombre y apellido del paciente que haya
         sido seleccionado en la pantalla principal. Así, busca el archivo csv con ese nombre y carga los datos en
         la RecycleView (lista desplazable) que muestra los datos."""
+
         while vitalgb_app.patient_selected is None:
             pass
         self.id = vitalgb_app.patient_selected
@@ -401,7 +427,7 @@ class PantallaPacienteSeleccionado(MDScreen):
             popup = PopUpException(traductor(mensaje))
             popup.open()
         else:
-            if len(self.stream) == 1:
+            if len(self.stream) >= 1:
                 if len(self.ids.rv.viewclass.selection) == 1:
                     index = self.ids.rv.data.index(self.ids.rv.viewclass.selection[0])
                     self.ids.rv.viewclass.selection[0][eleccion] = self.fuerza
@@ -550,10 +576,18 @@ class MainApp(MDApp):
 
     def __init__(self, **kwargs):
         super().__init__()
+        self.path = None
         self.planilla_personal = PlanillaPersonal(working_path)
         self.planilla_general = PlanillaGeneral(working_path)
         self.bluetooth_conection = Bluetooth(DEVICE_NAME)
         self.patient_selected = None
+
+        self.manager_open = False
+        self.file_manager = MDFileManager(
+            exit_manager=self.exit_manager,
+            select_path=self.seleccion_de_path,
+            # preview=True
+        )
 
     def verificar_conexion_bluetooth(self):
         try:
@@ -584,14 +618,19 @@ class MainApp(MDApp):
     def key_input(self, window, key, scancode, codepoint, modifier):
         if key == 27:
             if self.root.ids.screen_manager.current == 'pantalla_agregar_paciente':
-                self.root.ids.screen_manager.current_screen.menu.dismiss()
+                self.root.ids.screen_manager.current_screen.menu_sexo.dismiss()
             self.volver_pantalla_principal()
+            if self.manager_open:
+                self.file_manager.back()
             return True  # override the default behaviour
         else:  # the key now does nothing
             return False
 
     def volver_pantalla_principal(self):
-        self.root.ids.screen_manager.current = "pantalla_principal"
+        if self.patient_selected is None:
+            self.root.ids.screen_manager.current = "pantalla_principal"
+        else:
+            self.root.ids.screen_manager.current = "pantalla_paciente_seleccionado"
 
     def cargar_datos_institucionales(self):
         self.dialog = crear_dialogos(5, funcion_aceptar=lambda x: self._guardar_datos_institucionales())
@@ -605,6 +644,7 @@ class MainApp(MDApp):
         self.dialog.open()
 
     def _guardar_datos_institucionales(self):
+        # primero se guardan todos los datos de los campos a rellenar
         headers = ['nombre_profesional',
                    'nombre_del_servicio',
                    'direccion',
@@ -612,8 +652,44 @@ class MainApp(MDApp):
                    'sitio_web']
         df = pandas.DataFrame({header: [self.dialog.content_cls.ids[field].text]
                                for (header, field) in zip(headers, self.dialog.content_cls.ids)})
+        # luego se carga el path del archivo
+        df['image_path'] = self.path
+        # finalmente se guardan todos los datos en un archivo
         df.to_csv(f"{working_path}/VitalGB/instituto.csv", index=False)
         self.dialog.dismiss()
+
+    def editar_info_paciente(self, id):
+        self.patient_selected = id
+        self.root.ids.nav_drawer.set_state("close")
+        self.root.ids.screen_manager.current = "pantalla_agregar_paciente"
+
+    def admin_archivos_abrir(self):
+        try:
+            PATH = f"{export_path}/VitalGB/"
+            self.file_manager.show(PATH)  # output manager to the screen
+            self.manager_open = True
+        except Exception as mensaje:
+            popup = Popup(title='Ops!', content=Label(text=f'{mensaje}'),
+                          size_hint=(0.7, 0.2))
+            popup.open()
+
+    def seleccion_de_path(self, path):
+        '''Esta funcion se llama cuando se clickea un archivo
+        o el catalogo de selección.
+
+        :type path: str;
+        :param path: path to the selected directory or file;
+        '''
+
+        self.exit_manager()
+        self.path = path
+        toast(path)
+
+    def exit_manager(self, *args):
+        '''Called when the user reaches the root of the directory tree.'''
+
+        self.manager_open = False
+        self.file_manager.close()
 
 
 vitalgb_app = MainApp()

@@ -27,7 +27,6 @@ MDNavigationLayout:
             padding: "8dp"
             spacing: "8dp"
 
-
             AnchorLayout:
                 anchor_x: "right"
                 size_hint_y: None
@@ -59,6 +58,7 @@ MDNavigationLayout:
                 TwoLineAvatarIconListItem:
                     text: "Editar datos"
                     secondary_text: "del paciente"
+                    on_release: app.editar_info_paciente(root.ids.pantalla_paciente_seleccionado.id)
                     IconLeftWidget:
                         icon: "account-edit-outline"
 
@@ -162,6 +162,7 @@ MDNavigationLayout:
         MDToolbar:
             title: "Nuevo Paciente"
             mode: "center"
+            id: title
             halign: "center"
             elevation: 10
             md_bg_color: 0.4, 0.48, 0.67, 1
@@ -227,7 +228,7 @@ MDNavigationLayout:
                 id: entrada_sexo
                 write_tab: False
                 on_focus: root.open_menu_sexo()
-                on_text_validate: root.menu.dismiss()
+                on_text_validate: root.menu_sexo.dismiss()
 
             # == Entrada Fecha de Nacimiento ==
 

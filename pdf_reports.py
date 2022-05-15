@@ -5,10 +5,10 @@ import pandas
 
 
 class CrearReportePDF:
-    image_path = 'images/logo.png'
-    encabezados = ['AUTOR:','PACIENTE:','FEC.NAC.:','TIPO DOCUMENTO:','NRO. DOCUMENTO:','SEXO:']
+    encabezados = ['AUTOR:', 'PACIENTE:', 'FEC.NAC.:', 'TIPO DOCUMENTO:', 'NRO. DOCUMENTO:', 'SEXO:']
 
-    def crear_reporte(self, datos_de_mediciones: pandas.DataFrame, filepath, datos_encabezado, obs, datos_instituto, **kwargs):
+    def crear_reporte(self, datos_de_mediciones: pandas.DataFrame, filepath, datos_encabezado, obs, datos_instituto,
+                      **kwargs):
         nombre_del_servicio = None
         all_data = self.formatear(datos_de_mediciones.to_dict())
 
@@ -28,16 +28,20 @@ class CrearReportePDF:
         if datos_instituto[0] is not None:
             datos_encabezado[0] = datos_instituto.pop(0)
 
-        if "image" in kwargs:
-            self.image_path = kwargs.get("image")
-        img = Image.open(self.image_path)
+        try:
+            image_path = datos_instituto.pop(-1)
+            img = Image.open(image_path)
+        except Exception as mensaje:
+            print(mensaje)
+            image_path = 'images/logo.png'
+            img = Image.open(image_path)
 
         w, h = img.size
         factor = h // 25
         w //= factor
         h //= factor
 
-        pdf.image(self.image_path, w=w, h=h)
+        pdf.image(image_path, w=w, h=h)
 
         pdf.set_xy(200, pdf.t_margin + 5)
         pdf.set_font(family="Times", size=9)
@@ -67,7 +71,7 @@ class CrearReportePDF:
             if datos_encabezado[0] is None:
                 pdf.cell(w=46, h=5, txt=f"{nombre_del_servicio.upper()}", border=0, align="L")
             else:
-                pdf.cell(w=46, h=5, txt=f"{nombre_del_servicio.upper()}", border=0, align="L",ln=1)
+                pdf.cell(w=46, h=5, txt=f"{nombre_del_servicio.upper()}", border=0, align="L", ln=1)
                 pdf.set_font("Helvetica", size=8, style="B")
                 pdf.cell(w=46, h=5, txt=f"{self.encabezados[0]}", border=0, align="L")
                 pdf.set_font("Helvetica", size=8)
@@ -79,9 +83,9 @@ class CrearReportePDF:
         pdf.cell(w=46, h=5, txt=datetime.datetime.now().strftime("%d/%m/%Y"), border=0, align="L", ln=1)
 
         data_counter = 0
-        for dato,encabezado in zip(datos_encabezado[1:],self.encabezados[1:]):
-            data_counter += 1
+        for dato, encabezado in zip(datos_encabezado[1:], self.encabezados[1:]):
             if dato is not None:
+                data_counter += 1
                 pdf.set_font("Helvetica", size=8, style="B")
                 pdf.cell(w=46, h=5, txt=encabezado, border=0, align="L")
                 pdf.set_font("Helvetica", size=8)

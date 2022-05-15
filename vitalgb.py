@@ -37,8 +37,16 @@ class PlanillaPersonal:
             # Ejemplo de como deben ser la lista de datos del instituto:
             # formato: instituto = [<nombre_del_servicio>,<dirección>,<telefono>,<sitio_web>]
             # Si no existe algun dato debe reemplazarse por None
-            encabezados = [None, 'Giuliano', '23/04/1995', 'DNI', '39204163', 'Masculino']
 
+            info_paciente = kwargs.get('info')
+            encabezados = [None, nombre_archivo, None, None, None, None]
+            if info_paciente[5] != '':
+                encabezados[2] = info_paciente[5]
+            if info_paciente[3] != '':
+                encabezados[3] = 'DNI'
+                encabezados[4] = info_paciente[3]
+            if info_paciente[4] != '':
+                encabezados[5] = info_paciente[4]
             CrearReportePDF().crear_reporte(self.data_frame, full_path, encabezados, obs, instituto)
         return full_path
 
@@ -52,7 +60,8 @@ class PlanillaPersonal:
                     data['nombre_del_servicio'].tolist()[0].title(),
                     data['direccion'].tolist()[0].title(),
                     data['telefono'].tolist()[0],
-                    data['sitio_web'].tolist()[0].lower()]
+                    data['sitio_web'].tolist()[0].lower(),
+                    data['image_path'].tolist()[0]]
 
     def lectura(self, id) -> pandas.DataFrame:
         """Función que devuelve los datos del archivo de planilla personal."""
@@ -93,7 +102,7 @@ class PlanillaGeneral(PlanillaPersonal):
             pacientes = pandas.read_csv(f"{self.file_location}/VitalGB/pacientes.csv")
             self.id = pacientes['id'].max() + 1
             if pandas.isna(self.id):
-                self.id = 1
+                self.id = 0
         except FileNotFoundError:
             working_directory = os.path.join(self.file_location, "VitalGB")
             if not os.path.exists(working_directory):
@@ -102,7 +111,7 @@ class PlanillaGeneral(PlanillaPersonal):
             self.headings = ["id", "Nombre", "Apellido", "DNI", "Sexo", "Fecha de Nacimiento"]
             self.data_frame = pandas.DataFrame([self.headings])
             self.data_frame.to_csv(f"{working_directory}/pacientes.csv", index=False, header=False)
-            self.id = 1
+            self.id = 0
 
     def cargar_paciente(self, nombre, apellido, **kwargs):
         """ Función para la carga de un paciente nuevo dentro de VitalGB"""
@@ -127,3 +136,15 @@ class PlanillaGeneral(PlanillaPersonal):
             if nombre['id'] == id:
                 return nombre['text']
 
+    def devolver_info_paciente(self, id):
+        pacientes = pandas.read_csv(f"{self.file_location}/VitalGB/pacientes.csv", keep_default_na=False, dtype=str)
+        return pacientes.loc[id].to_list()
+
+    def guardar_cambios_paciente(self, id, nombre, apellido, **kwargs):
+        df = pandas.read_csv(f"{self.file_location}/VitalGB/pacientes.csv", keep_default_na=False)
+        df.at[id, 'Nombre'] = nombre
+        df.at[id, 'Apellido'] = apellido
+        df.at[id, 'DNI'] = kwargs.get("dni")
+        df.at[id, 'Sexo'] = kwargs.get("sexo")
+        df.at[id, 'Fecha de Nacimiento'] = kwargs.get("nacimiento")
+        df.to_csv(f"{self.file_location}/VitalGB/pacientes.csv", index=False)
