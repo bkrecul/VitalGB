@@ -142,11 +142,24 @@
     spacing: "12dp"
     size_hint_y: None
     height: "80dp"
-    ScrollView:
-        MDTextField:
-            id: observaciones
-            hint_text: "Observaciones"
-            multiline: True
+    BoxLayout:
+        orientation: "horizontal"
+        ScrollView:
+            size_hint_x: 0.1
+            MDTextField:
+                #text: root.text
+                id: observaciones
+                hint_text: "Observaciones"
+                multiline: True
+                icon_left: "key-variant"
+        MDIconButton:
+            id: icono
+            icon: "microphone"
+            text_color: 1, 0, 0, 1
+            pos_hint: {"center_y": .5}
+            theme_text_color: "Custom"
+            on_release:
+                root.activar_microfono()
 
 <DialogoCargarDatosInstitucionales>
     orientation: "vertical"
