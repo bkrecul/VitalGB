@@ -6,6 +6,7 @@ from kivy.uix.popup import Popup
 from kivymd.uix.button import MDFlatButton, MDRaisedButton
 from kivymd.uix.dialog import MDDialog
 from translate import Translator
+from plyer import stt
 
 
 class DialogoCargarAngulos(BoxLayout):
@@ -17,45 +18,40 @@ class DialogoCargarFuerza(BoxLayout):
 
 
 class DialogoObservaciones(BoxLayout):
-    pass
+    def activar_microfono(self):
+        from kivy.clock import Clock
+        if not stt.listening:
+            self.ids.icono.text_color = 0, 1, 0, 1
+            try:
+                stt.start()
+                self.escuchar = Clock.schedule_interval(lambda dt: self.revisar_microfono(), 1)
+            except Exception as mensaje:
+                popup = PopUpException(traductor(mensaje))
+                popup.open()
+        else:
+            stt.stop()
+            self.copiar_texto()
+
+    def revisar_microfono(self):
+        # popup = PopUpException(str(stt.listening))
+        # popup.open()
+        if not stt.listening:
+            self.ids.icono.text_color = 1, 0, 0, 1
+            self.escuchar.cancel()
+            self.copiar_texto()
+
+    def copiar_texto(self):
+        try:
+            lectura = f'{stt.results[0]} '
+            texto_anterior = self.ids.observaciones.text
+            self.ids.observaciones.text = f'{texto_anterior}{lectura}'
+        except:
+            pass
 
 
 class DialogoCargarDatosInstitucionales(BoxLayout):
+    pass
 
-    def seleccionar_imagen(self):
-        # TODO: Permitir elegir imagen en dialogo de android
-        if platform == 'android':
-            from jnius import autoclass
-            from jnius import cast
-            try:
-                StrictMode = autoclass('android.os.StrictMode')
-                StrictMode.disableDeathOnFileUriExposure()
-                PythonActivity = autoclass('org.kivy.android.PythonActivity')
-
-                Intent = autoclass('android.content.Intent')
-                JString = autoclass('java.lang.String')
-
-                Uri = autoclass('android.net.Uri')
-                # File = autoclass('java.io.File')
-                shareIntent = Intent(Intent.ACTION_OPEN_DOCUMENT)  # ACTION_OPEN_DOCUMENT #ACTION_SEND #ACTION_VIEW
-                # imageFile = File(self.path)
-                # uri = Uri.fromFile(imageFile)
-                # shareIntent.setData(uri)
-                shareIntent.setType("*/*")
-                # parcelable = cast('android.os.Parcelable', uri)
-                shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                # shareIntent.putExtra(Intent.EXTRA_STREAM, parcelable)
-                currentActivity = cast('android.app.Activity', PythonActivity.mActivity)
-                self.path = currentActivity.startActivity(shareIntent)
-            except Exception as mensaje:
-                popup = Popup(title='Ops!', content=Label(text=f'Algo salió mal.\n{mensaje}'),
-                              size_hint=(0.7, 0.2))
-                popup.open()
-            else:
-                popup = Popup(title='Ops!', content=Label(text=f'{self.path}Algo salió bien.'),
-                              size_hint=(0.7, 0.2))
-                popup.open()
-            self.dismiss()
 
 def traductor(mensaje):
     mensaje = str(mensaje)
