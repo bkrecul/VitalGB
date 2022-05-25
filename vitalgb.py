@@ -59,7 +59,7 @@ class PlanillaPersonal:
             return [data['nombre_profesional'].tolist()[0].title(),
                     data['nombre_del_servicio'].tolist()[0].title(),
                     data['direccion'].tolist()[0].title(),
-                    data['telefono'].tolist()[0],
+                    str(data['telefono'].tolist()[0]),
                     data['sitio_web'].tolist()[0].lower(),
                     data['image_path'].tolist()[0]]
 
