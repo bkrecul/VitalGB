@@ -15,15 +15,11 @@ from kivymd.uix.boxlayout import MDBoxLayout
 from kivymd.uix.list import OneLineIconListItem
 from kivymd.uix.menu import MDDropdownMenu
 from kivymd.uix.screen import MDScreen
-# Delete often
-from kivymd.uix.filemanager import MDFileManager
 from kivymd.toast import toast
-
 from PupUps import *
 from vitalgb import PlanillaPersonal, PlanillaGeneral
 from vitalgb_com import Bluetooth
 from kivy.core.window import Window
-
 
 Window.softinput_mode = 'below_target'
 
@@ -35,7 +31,8 @@ if platform == 'android':
     from plyer import vibrator
 
     request_permissions([Permission.WRITE_EXTERNAL_STORAGE,
-                         Permission.READ_EXTERNAL_STORAGE])
+                         Permission.READ_EXTERNAL_STORAGE,
+                         Permission.RECORD_AUDIO])
     working_path = app_storage_path()
     export_path = primary_external_storage_path()
 else:
@@ -582,13 +579,6 @@ class MainApp(MDApp):
         self.bluetooth_conection = Bluetooth(DEVICE_NAME)
         self.patient_selected = None
 
-        self.manager_open = False
-        self.file_manager = MDFileManager(
-            exit_manager=self.exit_manager,
-            select_path=self.seleccion_de_path,
-            # preview=True
-        )
-
     def verificar_conexion_bluetooth(self):
         try:
             self.bluetooth_conection.enviar_byte()
@@ -620,8 +610,6 @@ class MainApp(MDApp):
             if self.root.ids.screen_manager.current == 'pantalla_agregar_paciente':
                 self.root.ids.screen_manager.current_screen.menu_sexo.dismiss()
             self.volver_pantalla_principal()
-            if self.manager_open:
-                self.file_manager.back()
             return True  # override the default behaviour
         else:  # the key now does nothing
             return False
@@ -664,32 +652,15 @@ class MainApp(MDApp):
         self.root.ids.screen_manager.current = "pantalla_agregar_paciente"
 
     def admin_archivos_abrir(self):
-        try:
-            PATH = f"{export_path}/VitalGB/"
-            self.file_manager.show(PATH)  # output manager to the screen
-            self.manager_open = True
-        except Exception as mensaje:
-            popup = Popup(title='Ops!', content=Label(text=f'{mensaje}'),
-                          size_hint=(0.7, 0.2))
-            popup.open()
+        from filechooser import AndroidFileChooser
+        AndroidFileChooser().open_file(on_selection=self.seleccion_de_path,filters=['image'])
 
     def seleccion_de_path(self, path):
         '''Esta funcion se llama cuando se clickea un archivo
         o el catalogo de selección.
-
-        :type path: str;
-        :param path: path to the selected directory or file;
         '''
-
-        self.exit_manager()
-        self.path = path
-        toast(path)
-
-    def exit_manager(self, *args):
-        '''Called when the user reaches the root of the directory tree.'''
-
-        self.manager_open = False
-        self.file_manager.close()
+        self.path = path[0]
+        toast(self.path)
 
 
 vitalgb_app = MainApp()
