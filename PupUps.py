@@ -193,22 +193,35 @@ class PopUpMeasuring(Popup):
             self.text += f"Flexión máxima medida: {flexion}°\nExtensión máxima medida:"
         if not not extension:
             self.text += f"Flexión máxima medida:\nExtensión máxima medida: {extension}°\n"
-        save_button = Button(text='Guardar',on_release=lambda x:self.save())
+        save_button = Button(text='Guardar',on_release=lambda x: self.save())
         self.ids.buttons.add_widget(save_button)
 
     def save(self):
         self.wanna_quit = True
 
 
+class PopUpEleccionDePie(Popup):
+    def __init__(self, funcion, **kwargs):
+        super().__init__(**kwargs)
+        self.funcion = funcion
+
+    def eleccion(self, pie):
+        self.funcion(pie)
+        self.dismiss()
+
+
 class PopUpEleccionDeFuerza(Popup):
-    def __init__(self, accion, **kwargs):
+    def __init__(self, accion, pie, **kwargs):
         super().__init__(**kwargs)
         self.accion = accion
+        self.pie = pie
 
     def extension(self):
-        self.accion('fuerza_extension_maxima')
+        self.accion(f'fuerza_extension_{self.pie}')
         self.dismiss()
 
     def flexion(self):
-        self.accion('fuerza_flexion_maxima')
+        self.accion(f'fuerza_flexion_{self.pie}')
         self.dismiss()
+
+
