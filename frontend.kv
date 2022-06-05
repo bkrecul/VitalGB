@@ -197,7 +197,20 @@ MDNavigationLayout:
                 id: entrada_apellido
                 text_color_normal: 0,0,0,1
                 write_tab: False
+                keyboard_suggestions: True
+                input_type: 'text'
                 on_text_validate: root.ids.entrada_dni.focus = True
+            ## USED TO TRY STUFF WITH GBOARD
+            #TextInput:
+            #    input_type: 'text'
+            #    keyboard_suggestions: True
+            #    multiline: False
+            #    text_size: self.size
+            #    size_hint_y: None
+            #    padding_y: [self.height / 2.0 - (self.line_height / 2.0) * len(self._lines), 0]
+            #    font_name: "fonts/Ubuntu-Th"
+            #    size: 1,dp(24)
+
 
         # ==== Label e Input para Tipo y DNI ====
 
@@ -282,7 +295,7 @@ MDNavigationLayout:
             size: self.size
             pos: self.pos
 
-    BoxLayout:
+    MDBoxLayout:
         orientation: 'vertical'
         MDToolbar:
             id: titulo_nombre_paciente
@@ -297,41 +310,32 @@ MDNavigationLayout:
             font_size: "24dp"
             font_style: "Caption"
 
-        BoxLayout:
-            size_y: self.minimum_height
-            size_hint: 1,0.1
-            padding: "5dp",0,0,0
-            orientation: 'horizontal'
-            LabelDeMedidas:
-                text: 'Fecha'
-            LabelDeMedidas:
-                text: 'F-Max'
-            LabelDeMedidas:
-                text: 'E-Max'
-            LabelDeMedidas:
-                text: 'Fuerza Flexion'
-            LabelDeMedidas:
-                text: 'Fuerza Extension'
+        MDTabs:
+            id: tabs_mediciones
+            #on_tab_switch: app.on_tab_switch(*args)
+            tab_hint_x: True
+            background_color: 0.4, 0.48, 0.67, 1
+            tab_display_mode: 'text'
+            allow_stretch: False
+            TabAngulos:
+                id: tab_angulos
+                size_hint_y: 1
+            TabFuerzas:
+                id: tab_fuerzas
+                size_hint_y: 1
 
-        RVEstudios:
-            size_hint_y: 0.7
-            id: rv
+        MDFloatingActionButtonSpeedDial:
+            id: btn_medir
+            disabled: True
+            data: app.comandos
+            size_hint_y: 0.01
+            bg_color_root_button: 0.4, 0.48, 0.67, 1
+            #bg_color_stack_button: 0.4, 0.48, 0.67, 1
+            callback: root.nueva_medicion
+            label_text_color: 1,1,1,1
+            root_button_anim: True
+            bg_hint_color:  0.4, 0.48, 0.67, 1
+            opening_time: 0
+            closing_time: 0
 
-        BoxLayout:
-            size_hint_y: 0.1
-            padding: 10
-            spacing: 10
-            orientation: 'horizontal'
-
-            MDFloatingActionButtonSpeedDial:
-                id: btn_medir
-                data: app.comandos
-                bg_color_root_button: 0.4, 0.48, 0.67, 1
-                #bg_color_stack_button: 0.4, 0.48, 0.67, 1
-                callback: root.nueva_medicion
-                label_text_color: 1,1,1,1
-                root_button_anim: True
-                bg_hint_color:  0.4, 0.48, 0.67, 1
-                opening_time: 0
-                closing_time: 0
 
