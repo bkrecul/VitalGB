@@ -51,10 +51,10 @@
 
 <SelectableBox>:
     fecha: ""
-    flexion_maxima: ""
-    extension_maxima: ""
-    fuerza_flexion_maxima: ""
-    fuerza_extension_maxima: ""
+    flexion_derecha: ""
+    extension_derecha: ""
+    flexion_izquierda: ""
+    extension_izquierda: ""
     selected: False
     # Draw a background to indicate selection
     canvas.before:
@@ -66,13 +66,13 @@
     LabelDeMedidasValores:
         text: root.fecha
     LabelDeMedidasValores:
-        text: root.flexion_maxima
+        text: '  ' + root.flexion_izquierda + '°' if root.flexion_izquierda != ' ' else ''
     LabelDeMedidasValores:
-        text: root.extension_maxima
+        text: '  ' + root.extension_izquierda + '°' if root.extension_izquierda != ' ' else ''
     LabelDeMedidasValores:
-        text: root.fuerza_flexion_maxima
+        text: '  ' + root.flexion_derecha + '°' if root.flexion_derecha != ' ' else ''
     LabelDeMedidasValores:
-        text: root.fuerza_extension_maxima
+        text: '  ' + root.extension_derecha + '°' if root.extension_derecha != ' ' else ''
 
 <RVEstudios>:
     viewclass: 'SelectableBox'
@@ -85,6 +85,67 @@
         orientation: 'vertical'
         multiselect: False
         touch_multiselect: True
+
+<TabAngulos@Tab>
+    text: "Ángulos"
+    name: 'mediciones_angulos'
+    rv: rv     # Para llamar al id rv
+    BoxLayout:
+        size_y: self.minimum_height
+        size_hint: 1,0.15
+        padding: "5dp",0,0,0
+        orientation: 'horizontal'
+        LabelDeMedidas:
+            text: 'Fecha'
+        LabelDeMedidas:
+            text: 'Flex. Izq.'
+        LabelDeMedidas:
+            text: 'Ext. Izq.'
+        LabelDeMedidas:
+            text: 'Flex. Der.'
+        LabelDeMedidas:
+            text: 'Ext. Der.'
+
+    RVEstudios:
+        size_hint_y: 0.8
+        id: rv
+
+    BoxLayout:
+        size_hint_y: 0.1
+        padding: 10
+        spacing: 10
+        orientation: 'horizontal'
+
+<TabFuerzas@Tab>
+    id: tab_fuerzas
+    text: "Fuerzas"
+    name: 'mediciones_fuerzas'
+    #rv: rv     # Para llamar al id rv
+    BoxLayout:
+        size_y: self.minimum_height
+        size_hint: 1,0.15
+        padding: "5dp",0,0,0
+        orientation: 'horizontal'
+        LabelDeMedidas:
+            text: 'Fecha'
+        LabelDeMedidas:
+            text: 'Fuerza    Flex. Izq.'
+        LabelDeMedidas:
+            text: 'Fuerza    Ext. Izq.'
+        LabelDeMedidas:
+            text: 'Fuerza    Flex. Der.'
+        LabelDeMedidas:
+            text: 'Fuerza    Ext. Der.'
+
+    #RVEstudios:
+    #    size_hint_y: 0.7
+    #    id: rv
+
+    BoxLayout:
+        size_hint_y: 0.8
+        padding: 10
+        spacing: 10
+        orientation: 'horizontal'
 
 <PopUpExportSuccessful>
     size_hint: 0.9, 0.35
@@ -212,6 +273,25 @@
             valign: 'center'
             font_name: "fonts/Ubuntu-C"
             text: root.text
+
+<PopUpEleccionDePie>
+    size_hint: 0.7, 0.25
+    title: "Elija el pie a medir"
+    text: ""
+    GridLayout:
+        cols: 2
+        padding: dp(20)
+        spacing: dp(10)
+        AnchorLayout:
+            anchor_x: 'center'
+            MDFillRoundFlatButton:
+                text: "IZQUIERDO"
+                on_release: root.eleccion('izquierda') #, root.dismiss()
+        AnchorLayout:
+            anchor_x: 'center'
+            MDFillRoundFlatButton:
+                text: "DERECHO"
+                on_release: root.eleccion('derecha') #, root.dismiss()
 
 <PopUpEleccionDeFuerza>
     size_hint: 0.7, 0.25
