@@ -13,7 +13,7 @@ package.domain = org.kreb
 source.dir = .
 
 # (list) Source files to include (let empty to include all the files)
-source.include_exts = py,png,jpg,kv,atlas,ttf,otf
+source.include_exts = py,png,jpg,kv,atlas,ttf,otf,db
 
 # (list) List of inclusions using pattern matching
 #source.include_patterns = assets/*,images/*.png
@@ -36,7 +36,7 @@ version = 0.1
 
 # (list) Application requirements
 # comma separated e.g. requirements = sqlite3,kivy
-requirements = python3,kivy,android,pandas,fpdf2,plyer,jnius,openpyxl,XlsxWriter,kivymd,sdl2_ttf==2.0.15,Pillow,Pygments,defusedxml,translate,requests,libretranslatepy,certifi,charset-normalizer,idna,lxml,urllib3
+requirements = python3,kivy,kivymd,android,pandas,fpdf2,plyer,jnius,openpyxl,XlsxWriter,sdl2_ttf==2.0.15,Pillow,Pygments,defusedxml,translate,requests,libretranslatepy,certifi,charset-normalizer,idna,lxml,urllib3,sqlite3
 
 # (str) Custom source folders for requirements
 # Sets custom source for any requirements with recipes
@@ -85,7 +85,7 @@ fullscreen = 0
 #android.presplash_color = #FFFFFF
 
 # (list) Permissions
-android.permissions = INTERNET,READ_EXTERNAL_STORAGE,WRITE_EXTERNAL_STORAGE,VIBRATE,BLUETOOTH,BLUETOOTH_ADMIN
+android.permissions = INTERNET,READ_EXTERNAL_STORAGE,WRITE_EXTERNAL_STORAGE,VIBRATE,BLUETOOTH,BLUETOOTH_ADMIN,RECORD_AUDIO
 
 # (int) Target Android API, should be as high as possible.
 #android.api = 27
