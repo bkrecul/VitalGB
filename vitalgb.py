@@ -24,12 +24,15 @@ class PlanillaPersonal:
     def exportar(self, tipo_de_archivo, id_paciente, path, **kwargs) -> str:
         """Función que genera un archivo pdf o csv a partir de los datos internos y devuelve el path
         de la ubicación de este archivo generado."""
-        datos = self.lectura(id_paciente)
+        datos_angulos = self.lectura(id_paciente, 'mediciones_angulos')
+        datos_fuerzas = self.lectura(id_paciente, 'mediciones_fuerzas')
         nombre_archivo = self.devolver_nombre_paciente(id_paciente)
-        df_datos = pandas.DataFrame(datos).drop('id', axis=1)
-        df_datos.set_axis(['Fecha', 'Flexión Izquierda', 'Extensión Izquierda', 'Flexión Derecha',
-                           'Extensión Derecha'], axis=1, inplace=True)
-
+        df_datos_angulos = pandas.DataFrame(datos_angulos).drop('id', axis=1)
+        df_datos_fuerzas = pandas.DataFrame(datos_fuerzas).drop('id', axis=1)
+        df_datos_angulos.set_axis(['Fecha', 'Flexión Izquierda', 'Extensión Izquierda', 'Flexión Derecha',
+                                   'Extensión Derecha'], axis=1, inplace=True)
+        df_datos_fuerzas.set_axis(['Fecha', 'Flexión Izquierda', 'Extensión Izquierda', 'Flexión Derecha',
+                                   'Extensión Derecha'], axis=1, inplace=True)
         working_directory = os.path.join(path, "VitalGB")
         if not os.path.exists(working_directory):
             os.makedirs(working_directory)
@@ -38,14 +41,73 @@ class PlanillaPersonal:
 
         if tipo_de_archivo == "csv":
             full_path = f"{working_directory}/reportes/{nombre_archivo}.xlsx"
-            writer = pandas.ExcelWriter(full_path)
-            df_datos.to_excel(writer, sheet_name='Hoja 1', index=False, header=True)
-            worksheet = writer.sheets['Hoja 1']
-            worksheet.set_column(1, 2, 20)
-            worksheet.set_column(3, 4, 25)
-            worksheet.set_column(0, 0, 10)
+            writer = pandas.ExcelWriter(full_path, engine='xlsxwriter')
+            workbook = writer.book
+            format1 = workbook.add_format({'num_format': '0°'})
+            df_datos_angulos.to_excel(writer, sheet_name='Ángulos', index=False, header=True)
+            worksheet_angulos = writer.sheets['Ángulos']
+            worksheet_angulos.set_column(1, 4, 20, format1)
+            worksheet_angulos.set_column(0, 0, 14)
+            format2 = workbook.add_format({'num_format': '0.00 "Kgf"'})
+            df_datos_fuerzas.to_excel(writer, sheet_name='Fuerzas', index=False, header=True)
+            worksheet_fuerzas = writer.sheets['Fuerzas']
+            worksheet_fuerzas.set_column(1, 4, 20, format2)
+            worksheet_fuerzas.set_column(0, 0, 14)
+
             writer.save()
-            # self.data_frame.to_excel(full_path, index=False, header=True, engine='xlsxwriter',)
+
+            # import pandas as pd
+            # import pandas.io.data as web
+            #
+            # # Some sample data to plot.
+            # all_data = {}
+            # for ticker in ['AAPL', 'GOOGL', 'IBM', 'YHOO', 'MSFT']:
+            #     all_data[ticker] = web.get_data_yahoo(ticker, '1/1/2012', '1/1/2013')
+            #
+            # # Create a Pandas dataframe from the data.
+            # df = pd.DataFrame({tic: data['Adj Close']
+            #                    for tic, data in all_data.items()})
+            #
+            # # Create a Pandas Excel writer using XlsxWriter as the engine.
+            # excel_file = 'legend_stock.xlsx'
+            # sheet_name = 'Sheet1'
+            #
+            # writer = pd.ExcelWriter(excel_file, engine='xlsxwriter')
+            # df.to_excel(writer, sheet_name=sheet_name)
+            #
+            # # Access the XlsxWriter workbook and worksheet objects from the dataframe.
+            # workbook = writer.book
+            # worksheet = writer.sheets[sheet_name]
+            #
+            # # Adjust the width of the first column to make the date values clearer.
+            # worksheet.set_column('A:A', 20)
+            #
+            # # Create a chart object.
+            # chart = workbook.add_chart({'type': 'line'})
+            #
+            # # Configure the series of the chart from the dataframe data.
+            # max_row = len(df) + 1
+            # for i in range(len(['AAPL', 'GOOGL'])):
+            #     col = i + 1
+            #     chart.add_series({
+            #         'name': ['Sheet1', 0, col],
+            #         'categories': ['Sheet1', 2, 0, max_row, 0],
+            #         'values': ['Sheet1', 2, col, max_row, col],
+            #         'line': {'width': 1.00},
+            #     })
+            #
+            # # Configure the chart axes.
+            # chart.set_x_axis({'name': 'Date', 'date_axis': True})
+            # chart.set_y_axis({'name': 'Price', 'major_gridlines': {'visible': False}})
+            #
+            # # Position the legend at the top of the chart.
+            # chart.set_legend({'position': 'top'})
+            #
+            # # Insert the chart into the worksheet.
+            # worksheet.insert_chart('H2', chart)
+            #
+            # # Close the Pandas Excel writer and output the Excel file.
+            # writer.save()
 
         if tipo_de_archivo == 'pdf':
             obs = kwargs.get('obs')
@@ -80,35 +142,45 @@ class PlanillaPersonal:
                     data['sitio_web'].tolist()[0].lower(),
                     data['image_path'].tolist()[0]]
 
-    def lectura(self, id_paciente) -> list:
+    def lectura(self, id_paciente, magnitud_a_medir, **kwargs) -> list:
         """Función que devuelve los datos del archivo de planilla personal."""
+        base_command = f'SELECT * FROM {magnitud_a_medir} WHERE id_paciente={id_paciente}'
         conexion = self.conectarse_BD()
         cursor = conexion.cursor()
-        cursor.execute("""
-                        SELECT * FROM mediciones_angulos WHERE id_paciente=?
-                        """, [id_paciente])
+        cursor.execute(base_command)
         mediciones = cursor.fetchall()
         mediciones = [{'id': medicion[0],
                        'fecha': medicion[2],
-                       'flexion_derecha': str(medicion[3]),
-                       'extension_derecha': str(medicion[4]),
-                       'flexion_izquierda': str(medicion[5]),
-                       'extension_izquierda': str(medicion[6])}
+                       'flexion_izquierda': medicion[5],
+                       'extension_izquierda': medicion[6],
+                       'flexion_derecha': medicion[3],
+                       'extension_derecha': medicion[4]}
                       for medicion in mediciones]
         conexion.close()
+        if kwargs.get('formateado'):
+            return self._agregar_unidades(mediciones, magnitud_a_medir)
         return mediciones
+
+    def _agregar_unidades(self, mediciones, magnitud):
+        if magnitud == 'mediciones_angulos':
+            unidad = "°"
+        else:
+            unidad = " Kgf"
+        for fila in mediciones:
+            for elemento in fila:
+                if elemento != 'id' and elemento != 'fecha' and fila[elemento] != " ":
+                    fila[elemento] = str(fila[elemento]) + unidad
+        return mediciones
+
 
     def _sobreescribir_anterior(self, id_paciente, magnitud_a_medir, fecha, **kwargs):
         """ Esta función revisa si el dato anterior que fue guardado a la tabla mediciones tiene el campo contrario
         del otro pie vacío, y su medición fue efectuado con una antiguedad menor a media hora, para evitar
         generar una nueva fila en caso de que el profesional no haya seleccionado la fila para editar. """
         # TODO: hacer lo que dice la descripción del método
-        if len(self.lectura(id_paciente)) == 0:
+        if len(self.lectura(id_paciente, magnitud_a_medir)) == 0:
             return False
-        if magnitud_a_medir == 'mediciones_angulos':
-            ultima_medicion = self.lectura(id_paciente)[-1]
-        else:
-            pass  # TODO: Considerar cuando se trate de lectura de fuerzas.
+        ultima_medicion = self.lectura(id_paciente, magnitud_a_medir)[-1]
         if fecha[0][0:8] != ultima_medicion.pop('fecha')[0:8]:
             return False
         else:
@@ -119,19 +191,19 @@ class PlanillaPersonal:
             return False
 
     def borrar_medicion(self, magnitud_a_medir, id_medicion):
-        base_comand = f'DELETE FROM {magnitud_a_medir} WHERE id={id_medicion}'
+        base_command = f'DELETE FROM {magnitud_a_medir} WHERE id={id_medicion}'
         conexion = self.conectarse_BD()
-        conexion.execute(base_comand)
+        conexion.execute(base_command)
         conexion.commit()
 
     def editar_mediciones(self, magnitud_a_medir, id_medicion, **kwargs):
-        base_comand = f'UPDATE {magnitud_a_medir} SET '
+        base_command = f'UPDATE {magnitud_a_medir} SET '
         for column_name, column_values in kwargs.items():
-            base_comand += f'{column_name}={column_values}'
-            base_comand += ', '
-        base_comand = base_comand[0:-2] + f' WHERE id={id_medicion}'
+            base_command += f'{column_name}={column_values}'
+            base_command += ', '
+        base_command = base_command[0:-2] + f' WHERE id={id_medicion}'
         conexion = self.conectarse_BD()
-        conexion.execute(base_comand)
+        conexion.execute(base_command)
         conexion.commit()
         conexion.close()
 
@@ -143,15 +215,15 @@ class PlanillaPersonal:
             self.editar_mediciones(magnitud_a_medir, id_medicion, **kwargs)
 
         else:
-            base_comand = f'INSERT INTO {magnitud_a_medir} ("fecha", "id_paciente"'
+            base_command = f'INSERT INTO {magnitud_a_medir} ("fecha", "id_paciente"'
             for column_name in kwargs.keys():
-                base_comand += f", {column_name}"
-            base_comand += f") VALUES ('{fecha[0]}', {id_paciente}"
+                base_command += f", {column_name}"
+            base_command += f") VALUES ('{fecha[0]}', {id_paciente}"
             for column_values in kwargs.values():
-                base_comand += f", {column_values}"
-            base_comand += '); '
+                base_command += f", {column_values}"
+            base_command += '); '
             conexion = self.conectarse_BD()
-            conexion.execute(base_comand)
+            conexion.execute(base_command)
             conexion.commit()
             conexion.close()
 
