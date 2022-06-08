@@ -1,4 +1,5 @@
 import time
+from random import randint
 import pandas
 from kivy.clock import Clock
 from kivy.config import Config
@@ -22,8 +23,6 @@ from PupUps import *
 from vitalgb import PlanillaPersonal, PlanillaGeneral
 from vitalgb_com import Bluetooth
 from kivy.core.window import Window
-import numpy as np
-from kivy.garden.graph import Graph, LinePlot
 
 Window.softinput_mode = 'below_target'
 
@@ -224,13 +223,13 @@ class PantallaPacienteSeleccionado(MDScreen):
         nombre_completo = vitalgb_app.planilla_general.devolver_nombre_paciente(self.id)
         self.ids.titulo_nombre_paciente.text = nombre_completo
         vitalgb_app.patient_selected = None
-        self.ids.tab_angulos.rv.data.clear()
-        self.refresh()
-        self.ids.tab_angulos.rv.refresh_from_data()
+        self.refresh(magnitud='mediciones_angulos')
+        self.refresh(magnitud='mediciones_fuerzas')
         vitalgb_app.root.ids.nav_drawer.swipe_edge_width = 50
 
     def nueva_medicion(self, instance):
         """ Función del botón medir --> si hay conexión de Bluetooth = Medir por bluetooth."""
+        actual = self.obtener_magnitud_actual()
         self.stream.clear()
         if instance.icon == 'angle-obtuse':
             self.ids.tabs_mediciones.switch_tab('Ángulos')
@@ -245,27 +244,30 @@ class PantallaPacienteSeleccionado(MDScreen):
         if instance.icon == 'weight-kilogram':
             self.ids.tabs_mediciones.switch_tab('Fuerzas')
             if vitalgb_app.bluetooth_disponible:
+            # if True:
                 self.popup_elecion_pie = PopUpEleccionDePie(lambda x: self.eleccion_fuerza(x))
                 self.popup_elecion_pie.open()
             else:
                 self.snackbar_fuerzas.open()
             self.ids.btn_medir.close_stack()
         if instance.icon == 'delete':
-            if not not self.ids.tab_angulos.rv.viewclass.selection:
+            if not not self.ids[actual].rv.viewclass.selection:
                 self.ids.btn_medir.close_stack()
                 self.dialog = crear_dialogos(3, funcion_aceptar=lambda x: self.delete())
                 self.dialog.buttons[0].on_release = self.dialog.dismiss
                 self.dialog.open()
 
     def cargar_manualmente(self):
+        """ Esta función es llamada por un botón dentro del SnackBar que se muestra cuando
+        se quiere agregar una medición de ángulos con el dispositivo desconectado. """
         # Lo primero es un truco para que no se abra el menu de elegir medición nuevamente:
         Clock.schedule_once(lambda x: self.ids.btn_medir.close_stack(), 0.1)
         self.popup_elecion_pie = PopUpEleccionDePie(lambda x: self.medir(x, manual=True))
         self.popup_elecion_pie.open()
 
     def medir(self, pie, **kwargs):
-        """ Se transmite el byte para configurar el goniómetro
-        el goniómetro al encenderse estará recibiendo bytes, para poder ajustar su screen en
+        """ Se transmite el byte para configurar el goniómetro.
+        El goniómetro al encenderse estará recibiendo bytes, para poder ajustar su screen en
         caso de tratarse de una medición de pie derecho o izquierdo."""
         if 'manual' in kwargs:
             if kwargs.get('manual'):
@@ -274,17 +276,17 @@ class PantallaPacienteSeleccionado(MDScreen):
                 self.dialog.open()
                 return
 
-        if pie == 'derecha':
-            vitalgb_app.byte = 1
-        else:
-            vitalgb_app.byte = 2
         if self.obtener_magnitud_actual() == 'mediciones_angulos':
+            if pie == 'derecha':
+                vitalgb_app.byte = 1
+            else:
+                vitalgb_app.byte = 2
             self.clock = Clock.schedule_interval(lambda dt: self.medir_angulos(pie), 0.2)
             self.dialog = PopUpMeasuring(self.clock)
             self.dialog.open()
         elif self.obtener_magnitud_actual() == 'mediciones_fuerzas':
-            self.clock = Clock.schedule_interval(lambda dt: self.medir_fuerza(pie), 0.2)
-            self.dialog = PopUpMeasuring(self.clock)
+            vitalgb_app.byte = 3
+            self.dialog = PopUpMeasuringFuerza(Clock.schedule_interval(lambda dt: self.medir_fuerza(pie), 0.1))
             self.dialog.open()
 
     def delete(self):
@@ -307,7 +309,7 @@ class PantallaPacienteSeleccionado(MDScreen):
 
     def guardar_angulos_en_DB(self, dict):
         medicion = self.obtener_magnitud_actual()
-        if len(self.ids.tab_angulos.rv.viewclass.selection) == 1:
+        if len(self.ids[medicion].rv.viewclass.selection) == 1:
             """ IF: si se seleccionó un estudio (es decir, está en modo editar)"""
             id_medicion = self.obtener_indice_de_medicion()
             vitalgb_app.planilla_personal.editar_mediciones(medicion, id_medicion, **dict)
@@ -318,14 +320,18 @@ class PantallaPacienteSeleccionado(MDScreen):
         self.dialog.dismiss()
         self.refresh()
 
-    def refresh(self):
-        self.data = vitalgb_app.planilla_personal.lectura(self.id)
-        self.ids.tab_angulos.rv.data = self.data
-        self.ids.tab_angulos.rv.refresh_from_data()
-        self.ids.tab_angulos.rv.viewclass.selection.clear()
-        self.ids.tab_angulos.rv.viewclass.anterior.clear()
+    def refresh(self, **kwargs):
+        if 'magnitud' in kwargs:
+            actual = kwargs.get('magnitud')
+        else:
+            actual = self.obtener_magnitud_actual()
+        self.data = vitalgb_app.planilla_personal.lectura(self.id, actual, formateado=True)
+        self.ids[actual].rv.data = self.data
+        self.ids[actual].rv.refresh_from_data()
+        self.ids[actual].rv.viewclass.selection.clear()
+        self.ids[actual].rv.viewclass.anterior.clear()
         try:
-            self.ids.tab_angulos.rv.ids.estudios.clear_selection()
+            self.ids[actual].rv.ids.estudios.clear_selection()
         except IndexError:
             pass
 
@@ -379,48 +385,32 @@ class PantallaPacienteSeleccionado(MDScreen):
     def medir_fuerza(self, eleccion):
         """ Esta función es llamada en intervalos de tiempo (Clock), ya que constantemente revisará si hay datos
         disponibles para la lectura. Como se generó un PopUp, este clock puede ser cancelado."""
+        # eleccion: str -> flexion/extension_derecha/izquierda dependiendo de lo que se elija
         try:
             recv_stream = vitalgb_app.root.ids.pantalla_principal.recv_stream
-            while recv_stream.ready():
-                char = recv_stream.readLine()
-                self.fuerza = str(char)
-                self.stream.append(self.fuerza)
-                vibrator.vibrate(1)
+            if not self.dialog.its_stopped:
+                while recv_stream.ready():
+                    char = recv_stream.readLine()
+                    self.fuerza = float(str(char))
+                    self.dialog.medidas.append(self.fuerza)
+                    self.dialog.update_points()
+                    self.dialog.update_xaxis()
+            else:
+                vitalgb_app.byte = 1
+            # if not self.dialog.its_stopped:
+            #     test = randint(1, 20) * 0.1
+            #     self.dialog.medidas.append(gay)
+            #     self.dialog.update_points()
+            #     self.dialog.update_xaxis()
         except Exception as mensaje:
             self.dialog.dismiss()
-            self.clock.cancel()
             popup = PopUpException(traductor(mensaje))
             popup.open()
         else:
-            if len(self.stream) >= 1:
-                dict = self._dict_angulos(eleccion, self.fuerza, 0)
+            if self.dialog.wanna_quit:
+                self.dialog.clock.cancel()
+                dict = self._dict_angulos(eleccion, self.dialog.max, 0)
                 self.guardar_angulos_en_DB(dict)
-                self.clock.cancel()
-                # if len(self.ids.tab_angulos.rv.viewclass.selection) == 1:
-                #     index = self.ids.tab_angulos.rv.data.index(self.ids.tab_angulos.rv.viewclass.selection[0])
-                #     self.ids.tab_angulos.rv.viewclass.selection[0][eleccion] = self.fuerza
-                #     self.ids.tab_angulos.rv.data[index] = self.ids.tab_angulos.rv.viewclass.selection[0]
-                # else:
-                #     if eleccion == 'fuerza_flexion_maxima':
-                #         medicion = {
-                #             'fecha': time.strftime('%d/%m/%y %H:%M'),
-                #             'flexion_maxima': "-",
-                #             'extension_maxima': "-",
-                #             'fuerza_flexion_maxima': self.fuerza,
-                #             'fuerza_extension_maxima': "-",
-                #         }
-                #     else:
-                #         medicion = {
-                #             'fecha': time.strftime('%d/%m/%y %H:%M'),
-                #             'flexion_maxima': "-",
-                #             'extension_maxima': "-",
-                #             'fuerza_flexion_maxima': "-",
-                #             'fuerza_extension_maxima': self.fuerza,
-                #         }
-                #     self.ids.tab_angulos.rv.data.append(medicion)
-                # self.dialog.dismiss()
-                # self.clock.cancel()
-                # self.guardado()
 
     def pedir_observaciones(self):
         self.dialog = crear_dialogos(4, funcion_aceptar=lambda x: self.generate_pdf())
@@ -433,7 +423,7 @@ class PantallaPacienteSeleccionado(MDScreen):
             nombre_completo = vitalgb_app.planilla_general.devolver_nombre_paciente(self.id)
             info = vitalgb_app.planilla_general.devolver_info_paciente(self.id)
             path = vitalgb_app.planilla_personal.exportar(
-                'pdf', self.id, nombre_completo, export_path, obs=observaciones, info=info)
+                'pdf', self.id, export_path, obs=observaciones, info=info)
             self.dialog.dismiss()
         except Exception as mensaje:
             if ('errno 13' or 'permission denied') in str(mensaje).lower():
@@ -469,11 +459,12 @@ class PantallaPacienteSeleccionado(MDScreen):
             mensaje.open()
 
     def on_leave(self, *args):
-        self.ids.tab_angulos.rv.ids.estudios.clear_selection()
+        actual = self.obtener_magnitud_actual()
+        self.ids[actual].rv.ids.estudios.clear_selection()
         self.ids.btn_medir.close_stack()
         self.ids.btn_medir.icon = 'plus'
-        self.ids.tab_angulos.rv.viewclass.selection.clear()
-        self.ids.tab_angulos.rv.viewclass.anterior.clear()
+        self.ids[actual].rv.viewclass.selection.clear()
+        self.ids[actual].rv.viewclass.anterior.clear()
         vitalgb_app.estudio_seleccionado = None
         vitalgb_app.root.ids.nav_drawer.swipe_edge_width = 0
 
@@ -487,8 +478,9 @@ class PantallaPacienteSeleccionado(MDScreen):
             raise AttributeError
 
     def obtener_indice_de_medicion(self):
-        index = self.ids.tab_angulos.rv.data.index(self.ids.tab_angulos.rv.viewclass.selection[0])
-        id_medicion = self.ids.tab_angulos.rv.data[index]['id']
+        actual = self.obtener_magnitud_actual()
+        index = self.ids[actual].rv.data.index(self.ids[actual].rv.viewclass.selection[0])
+        id_medicion = self.ids[actual].rv.data[index]['id']
         return id_medicion
 
 
@@ -584,7 +576,8 @@ class SelectableBox(RecycleDataViewBehavior, BoxLayout):
                 self.selection.append(current)
             else:
                 self.anterior.clear()
-                vitalgb_app.root.ids.pantalla_paciente_seleccionado.ids.tab_angulos.rv.ids.estudios.clear_selection()
+                actual = vitalgb_app.root.ids.pantalla_paciente_seleccionado.obtener_magnitud_actual()
+                vitalgb_app.root.ids.pantalla_paciente_seleccionado.ids[actual].rv.ids.estudios.clear_selection()
 
         vitalgb_app.root.ids.pantalla_paciente_seleccionado.ids.btn_medir.close_stack()
 
