@@ -312,16 +312,16 @@ MDNavigationLayout:
 
         MDTabs:
             id: tabs_mediciones
-            #on_tab_switch: app.on_tab_switch(*args)
+            on_tab_switch: root.refresh()
             tab_hint_x: True
             background_color: 0.4, 0.48, 0.67, 1
             tab_display_mode: 'text'
             allow_stretch: False
             TabAngulos:
-                id: tab_angulos
+                id: mediciones_angulos
                 size_hint_y: 1
             TabFuerzas:
-                id: tab_fuerzas
+                id: mediciones_fuerzas
                 size_hint_y: 1
 
         MDFloatingActionButtonSpeedDial:
