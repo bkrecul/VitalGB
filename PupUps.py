@@ -7,7 +7,8 @@ from kivymd.uix.button import MDFlatButton, MDRaisedButton
 from kivymd.uix.dialog import MDDialog
 from translate import Translator
 from plyer import stt
-
+from kivy.garden.graph import Graph, LinePlot
+# cambiar por kivy_garden.graph al construir apk
 
 class DialogoCargarAngulos(BoxLayout):
     pass
@@ -69,7 +70,7 @@ def crear_dialogos(tipo, **kwargs):
         return MDDialog(title='Dispositivo desconectado', text="Usted no está conectado al dispositivo, "
                                                                "¿quiere agregar medidas manualmente?",
                         buttons=[MDFlatButton(text="CANCELAR", theme_text_color="Custom",
-                                              text_color=(0.4, 0.48, 0.67, 1),),
+                                              text_color=(0.4, 0.48, 0.67, 1), ),
                                  MDRaisedButton(text="ACEPTAR", theme_text_color="Custom",
                                                 md_bg_color=(0.4, 0.48, 0.67, 1), text_color=(1, 1, 1, 1),
                                                 on_release=kwargs.get('funcion_aceptar'))])
@@ -89,11 +90,11 @@ def crear_dialogos(tipo, **kwargs):
                                                 on_release=kwargs.get('funcion_aceptar'))])
     if tipo == 3:
         return MDDialog(title='ELIMINAR SELECCIÓN', text="ADVERTENCIA: ESTA ACCIÓN BORRARÁ LOS DATOS PERMANENTEMENTE. "
-                                                               "¿CONTINUAR?",
+                                                         "¿CONTINUAR?",
                         buttons=[MDFlatButton(text="CANCELAR", theme_text_color="Custom",
-                                              text_color=(1,0,0,1),),
+                                              text_color=(1, 0, 0, 1), ),
                                  MDRaisedButton(text="ACEPTAR", theme_text_color="Custom",
-                                                md_bg_color=(1,0,0,1), text_color=(1, 1, 1, 1),
+                                                md_bg_color=(1, 0, 0, 1), text_color=(1, 1, 1, 1),
                                                 on_release=kwargs.get('funcion_aceptar'))])
     if tipo == 4:
         return MDDialog(title='Añadir observaciones', type="custom", content_cls=DialogoObservaciones(),
@@ -181,10 +182,10 @@ class PopUpException(Popup):
 
 class PopUpMeasuring(Popup):
     medicion = None
-    wanna_quit = False
 
     def __init__(self, kivy_clock, **kwargs):
         super().__init__(**kwargs)
+        self.wanna_quit = False
         self.clock = kivy_clock
 
     def refresh_text(self, flexion, extension):
@@ -193,7 +194,7 @@ class PopUpMeasuring(Popup):
             self.text += f"Flexión máxima medida: {flexion}°\nExtensión máxima medida:"
         if not not extension:
             self.text += f"Flexión máxima medida:\nExtensión máxima medida: {extension}°\n"
-        save_button = Button(text='Guardar',on_release=lambda x: self.save())
+        save_button = Button(text='Guardar', on_release=lambda x: self.save())
         self.ids.buttons.add_widget(save_button)
 
     def save(self):
@@ -217,11 +218,67 @@ class PopUpEleccionDeFuerza(Popup):
         self.pie = pie
 
     def extension(self):
-        self.accion(f'fuerza_extension_{self.pie}')
+        self.accion(f'extension_{self.pie}')
         self.dismiss()
 
     def flexion(self):
-        self.accion(f'fuerza_flexion_{self.pie}')
+        self.accion(f'flexion_{self.pie}')
         self.dismiss()
 
 
+class PopUpMeasuringFuerza(Popup):
+
+    def __init__(self, kivy_clock, **kwargs):
+        super().__init__(**kwargs)
+        self.wanna_quit = False
+        self.its_stopped = False
+        self.clock = kivy_clock
+        self.medidas = [0] # Lo primero que "mide" es 0, se partirá de allí
+        self.graph = Graph(
+            xlabel='Tiempo',
+            ylabel='Fuerza',
+            x_ticks_minor=1,
+            x_ticks_major=1,
+            y_ticks_major=0.5,
+            y_ticks_minor=5,
+            y_grid_label=True,
+            x_grid_label=True,
+            padding=5,
+            xlog=False,
+            ylog=False,
+            x_grid=True,
+            y_grid=True,
+            xmax=10,
+            ymin=0,
+            ymax=2)
+        self.ids.graph.add_widget(self.graph)
+        self.plot = LinePlot(color=[0, 0, 1, 1], line_width=1.5)
+        self.plot.points = [(x, self.medidas[x]) for x in range(len(self.medidas))]
+        self.graph.add_plot(self.plot)
+
+    def _round_up_div(self, list, div):
+        number = len(list)
+        return number//div + (number % div > 0)
+
+    def update_xaxis(self, *args):
+        if len(self.medidas) > 100:
+            self.graph.xmin = self._round_up_div(self.medidas, 10) - 10
+            self.graph.xmax = self._round_up_div(self.medidas, 10)
+
+    def update_points(self, *args):
+        self.plot.points = [(x/10, self.medidas[x]) for x in range(len(self.medidas))]
+
+    def continuar(self):
+        if not self.its_stopped:
+            self.its_stopped = True
+            # self.clock.cancel()
+            self.max = max(self.medidas)
+            self.prom = sum(self.medidas)/len(self.medidas)
+            self.text = f'Valor máximo: {self.max}\nPromedio: {self.prom}'
+            self.ids.button.text = 'Guardar'
+            self.ids.button.on_release()
+        else:
+            self.terminar()
+
+    def terminar(self):
+        self.wanna_quit = True
