@@ -66,13 +66,13 @@
     LabelDeMedidasValores:
         text: root.fecha
     LabelDeMedidasValores:
-        text: '  ' + root.flexion_izquierda + '°' if root.flexion_izquierda != ' ' else ''
+        text: '  ' + root.flexion_izquierda if root.flexion_izquierda != ' ' else ''
     LabelDeMedidasValores:
-        text: '  ' + root.extension_izquierda + '°' if root.extension_izquierda != ' ' else ''
+        text: '  ' + root.extension_izquierda if root.extension_izquierda != ' ' else ''
     LabelDeMedidasValores:
-        text: '  ' + root.flexion_derecha + '°' if root.flexion_derecha != ' ' else ''
+        text: '  ' + root.flexion_derecha if root.flexion_derecha != ' ' else ''
     LabelDeMedidasValores:
-        text: '  ' + root.extension_derecha + '°' if root.extension_derecha != ' ' else ''
+        text: '  ' + root.extension_derecha if root.extension_derecha != ' ' else ''
 
 <RVEstudios>:
     viewclass: 'SelectableBox'
@@ -120,7 +120,7 @@
     id: tab_fuerzas
     text: "Fuerzas"
     name: 'mediciones_fuerzas'
-    #rv: rv     # Para llamar al id rv
+    rv: rv     # Para llamar al id rv
     BoxLayout:
         size_y: self.minimum_height
         size_hint: 1,0.15
@@ -137,9 +137,9 @@
         LabelDeMedidas:
             text: 'Fuerza    Ext. Der.'
 
-    #RVEstudios:
-    #    size_hint_y: 0.7
-    #    id: rv
+    RVEstudios:
+        size_hint_y: 0.7
+        id: rv
 
     BoxLayout:
         size_hint_y: 0.8
@@ -334,3 +334,37 @@
             Button:
                 text: "Cancelar"
                 on_release: root.clock.cancel(), root.dismiss()
+
+<PopUpMeasuringFuerza>
+    size_hint: 0.9, 0.9
+    title: "Esperando"
+    auto_dismiss: False
+    text: ''
+    on_dismiss: self.clock.cancel()
+    BoxLayout:
+        orientation: "vertical"
+        size: root.width, root.height
+        padding: dp(20)
+        spacing: dp(10)
+        BoxLayout:
+            id: graph
+            size_hint: 1,0.7
+            orientation: 'vertical'
+        Label:
+            text_size: self.size
+            size_hint: 1,0.15
+            halign: 'center'
+            valign: 'center'
+            font_name: "fonts/Ubuntu-C"
+            text: root.text
+        BoxLayout:
+            size_hint: 1,0.15
+            orientation: "horizontal"
+            id: buttons
+            Button:
+                text: "Cancelar"
+                on_release: root.dismiss()
+            Button:
+                id: button
+                text: "Detener"
+                on_release: root.continuar()
