@@ -28,7 +28,7 @@ class Bluetooth:
     def enviar_byte(self, byte: int):
         i = [27, 64]  # ASCII escape integer and at sign integer
         pre = bytearray(i)
-        cmd = f'{byte}\n'.encode('UTF-8')
+        cmd = f'{byte}'.encode('UTF-8')
         pre.extend(cmd)
         self.send_stream.write(cmd)
         self.send_stream.flush()
