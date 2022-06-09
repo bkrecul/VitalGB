@@ -120,8 +120,8 @@ class PantallaAgregarPaciente(MDScreen):
             self.ids.entrada_sexo.text = info[4]
             if info[5] != '':
                 fecha = info[5].split('/')
-                self.ids.entrada_dia.text = fecha[0]
-                self.ids.entrada_mes.text = fecha[1]
+                self.ids.entrada_dia.text = fecha[0] + " "
+                self.ids.entrada_mes.text = fecha[1] + " "
                 self.ids.entrada_year.text = fecha[2]
         else:
             self.ids.title.title = 'Nuevo Paciente'
@@ -262,6 +262,10 @@ class PantallaPacienteSeleccionado(MDScreen):
         se quiere agregar una medición de ángulos con el dispositivo desconectado. """
         # Lo primero es un truco para que no se abra el menu de elegir medición nuevamente:
         Clock.schedule_once(lambda x: self.ids.btn_medir.close_stack(), 0.1)
+        # La siguiente condición es para evitar un error de intentar cargar un ángulo estando en el
+        # tab de fuerzas
+        if self.obtener_magnitud_actual() == 'mediciones_fuerzas':
+            self.ids.tabs_mediciones.switch_tab('Ángulos')
         self.popup_elecion_pie = PopUpEleccionDePie(lambda x: self.medir(x, manual=True))
         self.popup_elecion_pie.open()
 
@@ -442,7 +446,8 @@ class PantallaPacienteSeleccionado(MDScreen):
 
     def generate_csv(self):
         try:
-            path = vitalgb_app.planilla_personal.exportar('csv', self.id, export_path)
+            datos = vitalgb_app.planilla_general.devolver_info_paciente(self.id, dict_mode=True)
+            path = vitalgb_app.planilla_personal.exportar('csv', self.id, export_path, info_paciente=datos)
         except Exception as mensaje:
             if ('errno 13' or 'permission denied') in str(mensaje).lower():
                 request_permissions([Permission.WRITE_EXTERNAL_STORAGE,
