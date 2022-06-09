@@ -1,5 +1,8 @@
 import sqlite3
 import pandas
+# import pandas.io.formats.excel
+#
+# pandas.io.formats.excel.ExcelFormatter.header_style = None
 import os
 from pdf_reports import CrearReportePDF
 
@@ -27,12 +30,8 @@ class PlanillaPersonal:
         datos_angulos = self.lectura(id_paciente, 'mediciones_angulos')
         datos_fuerzas = self.lectura(id_paciente, 'mediciones_fuerzas')
         nombre_archivo = self.devolver_nombre_paciente(id_paciente)
-        df_datos_angulos = pandas.DataFrame(datos_angulos).drop('id', axis=1)
-        df_datos_fuerzas = pandas.DataFrame(datos_fuerzas).drop('id', axis=1)
-        df_datos_angulos.set_axis(['Fecha', 'Flexión Izquierda', 'Extensión Izquierda', 'Flexión Derecha',
-                                   'Extensión Derecha'], axis=1, inplace=True)
-        df_datos_fuerzas.set_axis(['Fecha', 'Flexión Izquierda', 'Extensión Izquierda', 'Flexión Derecha',
-                                   'Extensión Derecha'], axis=1, inplace=True)
+        datos_paciente = kwargs.get('info_paciente')
+
         working_directory = os.path.join(path, "VitalGB")
         if not os.path.exists(working_directory):
             os.makedirs(working_directory)
@@ -41,73 +40,7 @@ class PlanillaPersonal:
 
         if tipo_de_archivo == "csv":
             full_path = f"{working_directory}/reportes/{nombre_archivo}.xlsx"
-            writer = pandas.ExcelWriter(full_path, engine='xlsxwriter')
-            workbook = writer.book
-            format1 = workbook.add_format({'num_format': '0°'})
-            df_datos_angulos.to_excel(writer, sheet_name='Ángulos', index=False, header=True)
-            worksheet_angulos = writer.sheets['Ángulos']
-            worksheet_angulos.set_column(1, 4, 20, format1)
-            worksheet_angulos.set_column(0, 0, 14)
-            format2 = workbook.add_format({'num_format': '0.00 "Kgf"'})
-            df_datos_fuerzas.to_excel(writer, sheet_name='Fuerzas', index=False, header=True)
-            worksheet_fuerzas = writer.sheets['Fuerzas']
-            worksheet_fuerzas.set_column(1, 4, 20, format2)
-            worksheet_fuerzas.set_column(0, 0, 14)
-
-            writer.save()
-
-            # import pandas as pd
-            # import pandas.io.data as web
-            #
-            # # Some sample data to plot.
-            # all_data = {}
-            # for ticker in ['AAPL', 'GOOGL', 'IBM', 'YHOO', 'MSFT']:
-            #     all_data[ticker] = web.get_data_yahoo(ticker, '1/1/2012', '1/1/2013')
-            #
-            # # Create a Pandas dataframe from the data.
-            # df = pd.DataFrame({tic: data['Adj Close']
-            #                    for tic, data in all_data.items()})
-            #
-            # # Create a Pandas Excel writer using XlsxWriter as the engine.
-            # excel_file = 'legend_stock.xlsx'
-            # sheet_name = 'Sheet1'
-            #
-            # writer = pd.ExcelWriter(excel_file, engine='xlsxwriter')
-            # df.to_excel(writer, sheet_name=sheet_name)
-            #
-            # # Access the XlsxWriter workbook and worksheet objects from the dataframe.
-            # workbook = writer.book
-            # worksheet = writer.sheets[sheet_name]
-            #
-            # # Adjust the width of the first column to make the date values clearer.
-            # worksheet.set_column('A:A', 20)
-            #
-            # # Create a chart object.
-            # chart = workbook.add_chart({'type': 'line'})
-            #
-            # # Configure the series of the chart from the dataframe data.
-            # max_row = len(df) + 1
-            # for i in range(len(['AAPL', 'GOOGL'])):
-            #     col = i + 1
-            #     chart.add_series({
-            #         'name': ['Sheet1', 0, col],
-            #         'categories': ['Sheet1', 2, 0, max_row, 0],
-            #         'values': ['Sheet1', 2, col, max_row, col],
-            #         'line': {'width': 1.00},
-            #     })
-            #
-            # # Configure the chart axes.
-            # chart.set_x_axis({'name': 'Date', 'date_axis': True})
-            # chart.set_y_axis({'name': 'Price', 'major_gridlines': {'visible': False}})
-            #
-            # # Position the legend at the top of the chart.
-            # chart.set_legend({'position': 'top'})
-            #
-            # # Insert the chart into the worksheet.
-            # worksheet.insert_chart('H2', chart)
-            #
-            # # Close the Pandas Excel writer and output the Excel file.
-            # writer.save()
+            self.excel_export(full_path, datos_paciente, datos_angulos, datos_fuerzas)
 
         if tipo_de_archivo == 'pdf':
             obs = kwargs.get('obs')
@@ -128,6 +61,107 @@ class PlanillaPersonal:
                 encabezados[5] = info_paciente[4]
             CrearReportePDF().crear_reporte(self.data_frame, full_path, encabezados, obs, instituto)
         return full_path
+
+    @staticmethod
+    def excel_export(full_path, datos_paciente, datos_angulos, datos_fuerzas):
+
+        writer = pandas.ExcelWriter(full_path, engine='xlsxwriter')
+        workbook = writer.book
+
+        # Creamos la primera hoja que contendrá los datos del paciente y gráficos
+        df_datos_paciente = pandas.DataFrame.from_dict(datos_paciente, orient='index').drop('id', axis=0)
+        df_datos_paciente.to_excel(writer, sheet_name='Paciente', index=True, header=False)
+        worksheet_principal = writer.sheets['Paciente']
+        worksheet_principal.set_column('A:B', 20, None)
+
+        # Seguiremos con la hoja 2 de los ángulos
+        if datos_angulos:
+            df_datos_angulos = pandas.DataFrame(datos_angulos).drop('id', axis=1)
+            df_datos_angulos.set_axis(['Fecha', 'Flexión Izquierda', 'Extensión Izquierda', 'Flexión Derecha',
+                                       'Extensión Derecha'], axis=1, inplace=True)
+
+            # Aplicamos formatos:
+            format1 = workbook.add_format({'num_format': '0°', 'align': 'center', 'valign': 'vcenter'})
+            df_datos_angulos.to_excel(writer, sheet_name='Ángulos', index=False, header=True)
+
+            worksheet_angulos = writer.sheets['Ángulos']
+            for n_row in range(1, len(df_datos_angulos) + 1):
+                worksheet_angulos.set_row(n_row, 30)    # set_row(row, height, cell_format, options)
+            worksheet_angulos.set_column(1, 4, 20, format1)
+            worksheet_angulos.set_column(0, 0, 14)
+
+            # Generamos las gráficas que irán en la primer hoja
+            # Se generan los objetos chart
+            chart_angulos = workbook.add_chart({'type': 'line'})
+
+            max_row = len(df_datos_angulos)
+
+            chart_angulos.add_series({
+                'name': ['Ángulos', 0, 1],
+                'categories': ['Ángulos', 1, 0, max_row, 0],
+                'values': ['Ángulos', 1, 1, max_row, 1],
+                'line': {'width': 1.00},
+            })
+            chart_angulos.add_series({
+                'name': ['Ángulos', 0, 3],
+                'categories': ['Ángulos', 1, 0, max_row, 0],
+                'values': ['Ángulos', 1, 3, max_row, 3],
+                'line': {'width': 1.00},
+            })
+
+            # Configure the chart axes.
+            chart_angulos.set_x_axis({'name': 'Fecha', 'date_axis': True,
+                                      'minor_gridlines': {'visible': True}})  # 'num_font':  {'rotation': 45}
+            chart_angulos.set_y_axis({'name': 'Angulo', 'major_gridlines': {'visible': True}})
+
+            # Position the legend at the top of the chart.
+            chart_angulos.set_legend({'position': 'top'})
+
+            # Insert the chart into the worksheet.
+            worksheet_principal.insert_chart('E2', chart_angulos)
+
+            chart_angulos_2 = workbook.add_chart({'type': 'line'})
+
+            chart_angulos_2.add_series({
+                'name': ['Ángulos', 0, 2],
+                'categories': ['Ángulos', 1, 0, max_row, 0],
+                'values': ['Ángulos', 1, 2, max_row, 2],
+                'line': {'width': 1.00},
+            })
+            chart_angulos_2.add_series({
+                'name': ['Ángulos', 0, 4],
+                'categories': ['Ángulos', 1, 0, max_row, 0],
+                'values': ['Ángulos', 1, 4, max_row, 4],
+                'line': {'width': 1.00},
+            })
+
+            # Configure the chart axes.
+            chart_angulos_2.set_x_axis({'name': 'Fecha', 'date_axis': True,
+                                        'minor_gridlines': {'visible': True}})  # 'num_font':  {'rotation': 45}
+            chart_angulos_2.set_y_axis({'name': 'Angulo', 'major_gridlines': {'visible': True}})
+
+            # Position the legend at the top of the chart.
+            chart_angulos_2.set_legend({'position': 'top'})
+
+            # Insert the chart into the worksheet.
+            worksheet_principal.insert_chart('E17', chart_angulos_2)
+
+        if datos_fuerzas:
+
+            df_datos_fuerzas = pandas.DataFrame(datos_fuerzas).drop('id', axis=1)
+            df_datos_fuerzas.set_axis(['Fecha', 'Flexión Izquierda', 'Extensión Izquierda', 'Flexión Derecha',
+                                       'Extensión Derecha'], axis=1, inplace=True)
+
+            format2 = workbook.add_format({'num_format': '0.00 "Kgf"', 'align': 'center', 'valign': 'vcenter'})
+
+            df_datos_fuerzas.to_excel(writer, sheet_name='Fuerzas', index=False, header=True)
+            worksheet_fuerzas = writer.sheets['Fuerzas']
+            for n_row in range(1, len(df_datos_fuerzas) + 1):
+                worksheet_fuerzas.set_row(n_row, 30)
+            worksheet_fuerzas.set_column(1, 4, 20, format2)
+            worksheet_fuerzas.set_column(0, 0, 14)
+
+        writer.save()
 
     def lectura_datos_institucionales(self):
         try:
@@ -150,7 +184,7 @@ class PlanillaPersonal:
         cursor.execute(base_command)
         mediciones = cursor.fetchall()
         mediciones = [{'id': medicion[0],
-                       'fecha': medicion[2],
+                       'fecha': medicion[2].replace(" ",'\n'),
                        'flexion_izquierda': medicion[5],
                        'extension_izquierda': medicion[6],
                        'flexion_derecha': medicion[3],
@@ -262,7 +296,7 @@ class PlanillaGeneral(PlanillaPersonal):
         nombres = [{'text': paciente[1] + " " + paciente[2], 'id': paciente[0]} for paciente in pacientes]
         return nombres
 
-    def devolver_info_paciente(self, id_paciente):
+    def devolver_info_paciente(self, id_paciente, **kwargs):
         conexion = self.conectarse_BD()
         cursor = conexion.cursor()
         cursor.execute("""
@@ -270,6 +304,9 @@ class PlanillaGeneral(PlanillaPersonal):
                         """, [id_paciente])
         paciente = cursor.fetchone()
         conexion.close()
+        if kwargs.get('dict_mode'):
+            headers = ['id', 'Nombre', 'Apellido', 'DNI', 'Sexo', 'Fecha de Nacimiento']
+            return {header:str(dato)  for header,dato in zip(headers,paciente) if dato is not None}
         return [str(dato) if dato is not None else '' for dato in paciente]
 
     def guardar_cambios_paciente(self, id_paciente, nombre, apellido, dni, sexo, fecha_nacimiento):
