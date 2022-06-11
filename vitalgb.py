@@ -13,9 +13,12 @@ class PlanillaPersonal:
 
     def __init__(self, file_location=""):
         self.file_location = file_location
+        self.data_path = os.path.join(self.file_location, 'vitalgb.db')
+        if not os.path.exists(self.data_path):
+            self._crear_base_de_datos()
 
     def devolver_nombre_paciente(self, id_paciente):
-        conexion = self.conectarse_BD()
+        conexion = self._conectarse_BD()
         cursor = conexion.cursor()
         cursor.execute("""
                         SELECT nombre, apellido FROM pacientes WHERE id=?
@@ -62,8 +65,7 @@ class PlanillaPersonal:
             CrearReportePDF().crear_reporte(self.data_frame, full_path, encabezados, obs, instituto)
         return full_path
 
-    @staticmethod
-    def excel_export(full_path, datos_paciente, datos_angulos, datos_fuerzas):
+    def excel_export(self, full_path, datos_paciente, datos_angulos, datos_fuerzas):
 
         writer = pandas.ExcelWriter(full_path, engine='xlsxwriter')
         workbook = writer.book
@@ -79,22 +81,62 @@ class PlanillaPersonal:
             df_datos_angulos = pandas.DataFrame(datos_angulos).drop('id', axis=1)
             df_datos_angulos.set_axis(['Fecha', 'Flexión Izquierda', 'Extensión Izquierda', 'Flexión Derecha',
                                        'Extensión Derecha'], axis=1, inplace=True)
+            max_row = len(df_datos_angulos)
 
-            # Aplicamos formatos:
+            # calculamos el rango de movimiento de cada pie
+            resultados = self.calcular_rango_movil(datos_angulos)[0]
+            df_resultados = pandas.DataFrame(resultados)
+            df_resultados.to_excel(writer, sheet_name='Resultados', index=False, header=True)
+
+            format0 = workbook.add_format({'num_format': '0°', 'align': 'left', 'valign': 'vjustify'})
             format1 = workbook.add_format({'num_format': '0°', 'align': 'center', 'valign': 'vcenter'})
+
+            worksheet_resultados = writer.sheets['Resultados']
+            for n_row in range(1, max_row + 1):
+                worksheet_resultados.set_row(n_row, 30)
+            worksheet_resultados.set_column('B:B', 20, format1)
+            worksheet_resultados.set_column('D:D', 20, format1)
+            worksheet_resultados.set_column('C:C', 30, format0)
+            worksheet_resultados.set_column('E:E', 30, format0)
+            worksheet_resultados.set_column(0, 0, 12)
+
+            chart_resultados = workbook.add_chart({'type': 'line'})
+
+            chart_resultados.add_series({
+                'name': ['Resultados', 0, 1],
+                'categories': ['Resultados', 1, 0, max_row, 0],
+                'values': ['Resultados', 1, 1, max_row, 1],
+                'line': {'width': 1.00},
+            })
+            chart_resultados.add_series({
+                'name': ['Resultados', 0, 3],
+                'categories': ['Resultados', 1, 0, max_row, 0],
+                'values': ['Resultados', 1, 3, max_row, 3],
+                'line': {'width': 1.00},
+            })
+
+            # Configure the chart axes.
+            chart_resultados.set_x_axis({'name': 'Fecha', 'date_axis': True,
+                                         'minor_gridlines': {'visible': True}})  # 'num_font':  {'rotation': 45}
+            chart_resultados.set_y_axis({'name': 'Angulo', 'major_gridlines': {'visible': True}})
+
+            # Position the legend at the top of the chart.
+            chart_resultados.set_legend({'position': 'top'})
+
+            # Insert the chart into the worksheet.
+            worksheet_resultados.insert_chart(f'A{max_row + 2}', chart_resultados)
+
             df_datos_angulos.to_excel(writer, sheet_name='Ángulos', index=False, header=True)
 
             worksheet_angulos = writer.sheets['Ángulos']
-            for n_row in range(1, len(df_datos_angulos) + 1):
-                worksheet_angulos.set_row(n_row, 30)    # set_row(row, height, cell_format, options)
+            for n_row in range(1, max_row + 1):
+                worksheet_angulos.set_row(n_row, 30)  # set_row(row, height, cell_format, options)
             worksheet_angulos.set_column(1, 4, 20, format1)
-            worksheet_angulos.set_column(0, 0, 14)
+            worksheet_angulos.set_column(0, 0, 12)
 
             # Generamos las gráficas que irán en la primer hoja
             # Se generan los objetos chart
             chart_angulos = workbook.add_chart({'type': 'line'})
-
-            max_row = len(df_datos_angulos)
 
             chart_angulos.add_series({
                 'name': ['Ángulos', 0, 1],
@@ -159,7 +201,7 @@ class PlanillaPersonal:
             for n_row in range(1, len(df_datos_fuerzas) + 1):
                 worksheet_fuerzas.set_row(n_row, 30)
             worksheet_fuerzas.set_column(1, 4, 20, format2)
-            worksheet_fuerzas.set_column(0, 0, 14)
+            worksheet_fuerzas.set_column(0, 0, 12)
 
         writer.save()
 
@@ -179,12 +221,12 @@ class PlanillaPersonal:
     def lectura(self, id_paciente, magnitud_a_medir, **kwargs) -> list:
         """Función que devuelve los datos del archivo de planilla personal."""
         base_command = f'SELECT * FROM {magnitud_a_medir} WHERE id_paciente={id_paciente}'
-        conexion = self.conectarse_BD()
+        conexion = self._conectarse_BD()
         cursor = conexion.cursor()
         cursor.execute(base_command)
         mediciones = cursor.fetchall()
         mediciones = [{'id': medicion[0],
-                       'fecha': medicion[2].replace(" ",'\n'),
+                       'fecha': medicion[2].replace(" ", '\n'),
                        'flexion_izquierda': medicion[5],
                        'extension_izquierda': medicion[6],
                        'flexion_derecha': medicion[3],
@@ -225,7 +267,7 @@ class PlanillaPersonal:
 
     def borrar_medicion(self, magnitud_a_medir, id_medicion):
         base_command = f'DELETE FROM {magnitud_a_medir} WHERE id={id_medicion}'
-        conexion = self.conectarse_BD()
+        conexion = self._conectarse_BD()
         conexion.execute(base_command)
         conexion.commit()
 
@@ -235,14 +277,12 @@ class PlanillaPersonal:
             base_command += f'{column_name}={column_values}'
             base_command += ', '
         base_command = base_command[0:-2] + f' WHERE id={id_medicion}'
-        conexion = self.conectarse_BD()
+        conexion = self._conectarse_BD()
         conexion.execute(base_command)
         conexion.commit()
         conexion.close()
 
     def cargar_mediciones(self, id_paciente, fecha, magnitud_a_medir, **kwargs):
-        # TODO: cargar las mediciones que se vayan realizando con el dispositivo.
-        # TODO: agregar notas para las mediciones
         if self._sobreescribir_anterior(id_paciente, magnitud_a_medir, fecha, **kwargs):
             id_medicion = self._sobreescribir_anterior(id_paciente, magnitud_a_medir, fecha, **kwargs)
             self.editar_mediciones(magnitud_a_medir, id_medicion, **kwargs)
@@ -255,7 +295,7 @@ class PlanillaPersonal:
             for column_values in kwargs.values():
                 base_command += f", {column_values}"
             base_command += '); '
-            conexion = self.conectarse_BD()
+            conexion = self._conectarse_BD()
             conexion.execute(base_command)
             conexion.commit()
             conexion.close()
@@ -263,29 +303,39 @@ class PlanillaPersonal:
 
         return id_medicion
 
-    def calcular_rango_motriz(self, mediciones_angulos):
+    def calcular_rango_movil(self, mediciones_angulos):
         resultados = []
         indice_datos_ausentes = []
         for medicion in mediciones_angulos:
             calculo = {}
             indice = None
+            notas = self._cargar_notas_guardadas_angulos(medicion['id'])
             calculo['Fecha'] = medicion['fecha']
             try:
                 calculo['Rango izquierdo'] = medicion['flexion_izquierda'] + medicion['extension_izquierda']
             except TypeError:
                 indice = medicion['id']
+                # TODO: Cambiar reemplazo de dato ausente por un promedio de los datos ya existentes
                 calculo['Rango izquierdo'] = 65
+            if notas[0] != "":
+                calculo['Notas pie izquierdo'] = notas[0]
+            else:
+                calculo['Notas pie izquierdo'] = ""
             try:
                 calculo['Rango derecho'] = medicion['flexion_derecha'] + medicion['extension_derecha']
             except TypeError:
                 calculo['Rango derecho'] = 65
                 indice = medicion['id']
+            if notas[1] != "":
+                calculo['Notas pie derecho'] = notas[1]
+            else:
+                calculo['Notas pie derecho'] = ""
             if indice is not None:
                 indice_datos_ausentes.append(indice)
             resultados.append(calculo)
         return resultados, indice_datos_ausentes
 
-    def guardar_observaciones_de_medicion(self, id_medicion, magnitud, pie, observaciones:dict):
+    def guardar_nombre_de_nota_de_medicion(self, id_medicion, magnitud, pie, observaciones: dict):
         base_command = f'INSERT INTO {magnitud} ("id_medicion", "tipo", "id_observacion") VALUES ' \
                        f'({id_medicion}, '
         for key in observaciones.keys():
@@ -294,27 +344,124 @@ class PlanillaPersonal:
             for id_obs in observaciones[key]:
                 final_command = part_command
                 final_command += f'{id_obs}); '
-                conexion = self.conectarse_BD()
+                conexion = self._conectarse_BD()
                 conexion.execute(final_command)
                 conexion.commit()
                 conexion.close()
 
-    def obtener_nombres_observaciones(self):
-        conexion = self.conectarse_BD()
+    def _cargar_notas_guardadas_angulos(self, id_medicion):
+        conexion = self._conectarse_BD()
+        cursor = conexion.cursor()
+        cursor.execute(""" SELECT * FROM observaciones_angulos WHERE id_medicion=?
+                                """, [id_medicion])
+        notas = cursor.fetchall()
+        conexion.close()
+        notas_pie_izquierdo = ""
+        notas_pie_derecho = ""
+        for nota in notas:
+            tipo = nota[2]
+            if tipo == 'flexion_izquierda' or tipo == 'extension_izquierda':
+                notas_pie_izquierdo += self.obtener_nombres_observaciones(id=nota[3])[1] + ", "
+            if tipo == 'flexion_derecha' or tipo == 'extension_derecha':
+                notas_pie_derecho += self.obtener_nombres_observaciones(id=nota[3])[1] + ", "
+        return notas_pie_izquierdo, notas_pie_derecho
+
+    def obtener_nombres_observaciones(self, **kwargs):
+        if 'id' in kwargs:
+            conexion = self._conectarse_BD()
+            cursor = conexion.cursor()
+            cursor.execute(""" SELECT * FROM observacion WHERE id=?""", [kwargs.get('id')])
+            return cursor.fetchone()
+        conexion = self._conectarse_BD()
         cursor = conexion.cursor()
         cursor.execute(""" SELECT * FROM observacion """)
         return cursor.fetchall()
 
     def cargar_nota(self, nota):
-        conexion = self.conectarse_BD()
+        conexion = self._conectarse_BD()
         conexion.execute("""INSERT INTO observacion ("nombre")
                 VALUES (?); """, [nota])
         conexion.commit()
         conexion.close()
         return self.obtener_nombres_observaciones()[-1][0]
 
-    def conectarse_BD(self):
-        return sqlite3.connect('vitalgb.db')
+    def _conectarse_BD(self):
+        return sqlite3.connect(self.data_path)
+
+    def _crear_base_de_datos(self):
+        sqlite3.connect(self.data_path)
+        conexion = self._conectarse_BD()
+        conexion.execute("""CREATE TABLE "pacientes" (
+                                "id"	INTEGER NOT NULL UNIQUE,
+                                "nombre"	TEXT NOT NULL,
+                                "apellido"	TEXT NOT NULL,
+                                "dni"	INTEGER,
+                                "sexo"	TEXT,
+                                "fecha_nacimiento"	TEXT,
+                                PRIMARY KEY("id" AUTOINCREMENT)
+                                )""")
+        conexion.commit()
+        conexion.close()
+        conexion = self._conectarse_BD()
+        conexion.execute("""CREATE TABLE "observacion" (
+                                "id"	INTEGER NOT NULL UNIQUE,
+                                "nombre"	TEXT,
+                                PRIMARY KEY("id" AUTOINCREMENT)
+                            )""")
+        conexion.commit()
+        conexion.close()
+        conexion = self._conectarse_BD()
+        conexion.execute("""CREATE TABLE "mediciones_fuerzas" (
+                                "id"	INTEGER NOT NULL UNIQUE,
+                                "id_paciente"	INTEGER NOT NULL,
+                                "fecha"	TEXT NOT NULL,
+                                "flexion_derecha"	REAL NOT NULL DEFAULT ' ',
+                                "extension_derecha"	REAL NOT NULL DEFAULT ' ',
+                                "flexion_izquierda"	REAL NOT NULL DEFAULT ' ',
+                                "extension_izquierda"	REAL NOT NULL DEFAULT ' ',
+                                FOREIGN KEY("id_paciente") REFERENCES "pacientes"("id"),
+                                PRIMARY KEY("id" AUTOINCREMENT)
+                            )""")
+        conexion.commit()
+        conexion.close()
+        conexion = self._conectarse_BD()
+        conexion.execute(""" CREATE TABLE "mediciones_angulos" (
+                                "id"	INTEGER NOT NULL UNIQUE,
+                                "id_paciente"	INTEGER NOT NULL,
+                                "fecha"	TEXT NOT NULL,
+                                "flexion_derecha"	INTEGER NOT NULL DEFAULT ' ',
+                                "extension_derecha"	INTEGER NOT NULL DEFAULT ' ',
+                                "flexion_izquierda"	INTEGER NOT NULL DEFAULT ' ',
+                                "extension_izquierda"	INTEGER NOT NULL DEFAULT ' ',
+                                FOREIGN KEY("id_paciente") REFERENCES "pacientes"("id"),
+                                PRIMARY KEY("id" AUTOINCREMENT)
+                            )""")
+        conexion.commit()
+        conexion.close()
+        conexion = self._conectarse_BD()
+        conexion.execute("""CREATE TABLE "observaciones_angulos" (
+                                "id"	INTEGER NOT NULL UNIQUE,
+                                "id_medicion"	INTEGER NOT NULL,
+                                "tipo"	TEXT NOT NULL,
+                                "id_observacion"	INTEGER NOT NULL,
+                                FOREIGN KEY("id_observacion") REFERENCES "observacion"("id"),
+                                FOREIGN KEY("id_medicion") REFERENCES "mediciones_angulos"("id"),
+                                PRIMARY KEY("id" AUTOINCREMENT)
+                            )""")
+        conexion.commit()
+        conexion.close()
+        conexion = self._conectarse_BD()
+        conexion.execute("""CREATE TABLE "observaciones_fuerzas" (
+                                "id"	INTEGER NOT NULL UNIQUE,
+                                "id_medicion"	INTEGER NOT NULL,
+                                "tipo"	TEXT NOT NULL,
+                                "id_observacion"	INTEGER NOT NULL,
+                                FOREIGN KEY("id_observacion") REFERENCES "observacion"("id"),
+                                FOREIGN KEY("id_medicion") REFERENCES "mediciones_fuerzas"("id"),
+                                PRIMARY KEY("id" AUTOINCREMENT)
+                            )""")
+        conexion.commit()
+        conexion.close()
 
 
 class PlanillaGeneral(PlanillaPersonal):
@@ -327,7 +474,7 @@ class PlanillaGeneral(PlanillaPersonal):
     def cargar_paciente(self, nombre, apellido, dni, sexo, nacimiento):
         """ Función para la carga de un paciente nuevo dentro de VitalGB"""
 
-        conexion = self.conectarse_BD()
+        conexion = self._conectarse_BD()
         conexion.execute("""INSERT
         INTO pacientes ("nombre", "apellido", "dni", "sexo", "fecha_nacimiento")
         VALUES (?, ?, ?, ?, ?);""", [nombre, apellido, dni, sexo, nacimiento])
@@ -337,7 +484,7 @@ class PlanillaGeneral(PlanillaPersonal):
     def devolver_pacientes(self) -> list:
         """ Función que devuelve los nombres y apellidos de los pacientes, en formato de lista. """
 
-        conexion = self.conectarse_BD()
+        conexion = self._conectarse_BD()
         cursor = conexion.cursor()
         cursor.execute("""
                 SELECT * FROM pacientes
@@ -349,7 +496,7 @@ class PlanillaGeneral(PlanillaPersonal):
         return nombres
 
     def devolver_info_paciente(self, id_paciente, **kwargs):
-        conexion = self.conectarse_BD()
+        conexion = self._conectarse_BD()
         cursor = conexion.cursor()
         cursor.execute("""
                         SELECT * FROM pacientes WHERE id=?
@@ -358,11 +505,11 @@ class PlanillaGeneral(PlanillaPersonal):
         conexion.close()
         if kwargs.get('dict_mode'):
             headers = ['id', 'Nombre', 'Apellido', 'DNI', 'Sexo', 'Fecha de Nacimiento']
-            return {header:str(dato)  for header,dato in zip(headers,paciente) if dato is not None}
+            return {header: str(dato) for header, dato in zip(headers, paciente) if dato is not None}
         return [str(dato) if dato is not None else '' for dato in paciente]
 
     def guardar_cambios_paciente(self, id_paciente, nombre, apellido, dni, sexo, fecha_nacimiento):
-        conexion = self.conectarse_BD()
+        conexion = self._conectarse_BD()
         conexion.execute("""UPDATE pacientes SET nombre=?, apellido=?, dni=?, sexo=?, fecha_nacimiento=?
                             WHERE id=?""", [nombre, apellido, dni, sexo, fecha_nacimiento, id_paciente])
         conexion.commit()
