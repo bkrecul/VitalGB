@@ -206,7 +206,6 @@ class PlanillaPersonal:
                     fila[elemento] = str(fila[elemento]) + unidad
         return mediciones
 
-
     def _sobreescribir_anterior(self, id_paciente, magnitud_a_medir, fecha, **kwargs):
         """ Esta función revisa si el dato anterior que fue guardado a la tabla mediciones tiene el campo contrario
         del otro pie vacío, y su medición fue efectuado con una antiguedad menor a media hora, para evitar
@@ -260,6 +259,59 @@ class PlanillaPersonal:
             conexion.execute(base_command)
             conexion.commit()
             conexion.close()
+            id_medicion = self.lectura(id_paciente, magnitud_a_medir)[-1]['id']
+
+        return id_medicion
+
+    def calcular_rango_motriz(self, mediciones_angulos):
+        resultados = []
+        indice_datos_ausentes = []
+        for medicion in mediciones_angulos:
+            calculo = {}
+            indice = None
+            calculo['Fecha'] = medicion['fecha']
+            try:
+                calculo['Rango izquierdo'] = medicion['flexion_izquierda'] + medicion['extension_izquierda']
+            except TypeError:
+                indice = medicion['id']
+                calculo['Rango izquierdo'] = 65
+            try:
+                calculo['Rango derecho'] = medicion['flexion_derecha'] + medicion['extension_derecha']
+            except TypeError:
+                calculo['Rango derecho'] = 65
+                indice = medicion['id']
+            if indice is not None:
+                indice_datos_ausentes.append(indice)
+            resultados.append(calculo)
+        return resultados, indice_datos_ausentes
+
+    def guardar_observaciones_de_medicion(self, id_medicion, magnitud, pie, observaciones:dict):
+        base_command = f'INSERT INTO {magnitud} ("id_medicion", "tipo", "id_observacion") VALUES ' \
+                       f'({id_medicion}, '
+        for key in observaciones.keys():
+            part_command = base_command
+            part_command += f'"{key}_{pie}", '
+            for id_obs in observaciones[key]:
+                final_command = part_command
+                final_command += f'{id_obs}); '
+                conexion = self.conectarse_BD()
+                conexion.execute(final_command)
+                conexion.commit()
+                conexion.close()
+
+    def obtener_nombres_observaciones(self):
+        conexion = self.conectarse_BD()
+        cursor = conexion.cursor()
+        cursor.execute(""" SELECT * FROM observacion """)
+        return cursor.fetchall()
+
+    def cargar_nota(self, nota):
+        conexion = self.conectarse_BD()
+        conexion.execute("""INSERT INTO observacion ("nombre")
+                VALUES (?); """, [nota])
+        conexion.commit()
+        conexion.close()
+        return self.obtener_nombres_observaciones()[-1][0]
 
     def conectarse_BD(self):
         return sqlite3.connect('vitalgb.db')

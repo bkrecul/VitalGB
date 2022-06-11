@@ -4,17 +4,32 @@ from kivy.uix.button import Button
 from kivy.uix.label import Label
 from kivy.uix.popup import Popup
 from kivymd.uix.button import MDFlatButton, MDRaisedButton
+from kivymd.uix.chip import MDChip
 from kivymd.uix.dialog import MDDialog
 from translate import Translator
 from plyer import stt
 from kivy.garden.graph import Graph, LinePlot
 # cambiar por kivy_garden.graph al construir apk
 
+
 class DialogoCargarAngulos(BoxLayout):
-    pass
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.obs = {}
+
+    def abrir_dialogo_notas(self, llamado):
+        observaciones = self.app.obtener_nombres_observaciones()
+        obs = []
+        if llamado in self.obs:
+            obs = self.obs[llamado]
+        self.popup_notas = PopUpNotas(observaciones, obs, on_dismiss=lambda x: self.get_observaciones(llamado))
+        self.popup_notas.open()
+
+    def get_observaciones(self, llamado):
+        self.obs[llamado] = self.popup_notas.obs
 
 
-class DialogoCargarFuerza(BoxLayout):
+class DialogoCargarNota(BoxLayout):
     pass
 
 
@@ -82,7 +97,7 @@ def crear_dialogos(tipo, **kwargs):
                                                 md_bg_color=(0.4, 0.48, 0.67, 1), text_color=(1, 1, 1, 1),
                                                 on_release=kwargs.get('funcion_aceptar'))])
     if tipo == 2:
-        return MDDialog(title="Esfuerzo:", type="custom", content_cls=DialogoCargarFuerza(),
+        return MDDialog(title="Nueva nota:", type="custom", content_cls=DialogoCargarNota(),
                         buttons=[MDFlatButton(text="CANCELAR", theme_text_color="Custom",
                                               text_color=(0.4, 0.48, 0.67, 1), ),
                                  MDRaisedButton(text="ACEPTAR", theme_text_color="Custom",
@@ -180,6 +195,67 @@ class PopUpException(Popup):
         self.text = text
 
 
+class ChipNotas(MDChip):
+    icon = 'check'
+
+    def __init__(self, id_obs, checked, es_nota, **kwargs):
+        super().__init__(**kwargs)
+        self.id = id_obs
+        self.theme_cls = "Custom"
+        self.text_color = (1, 1, 1, 1)
+        self.es_nota = es_nota
+        self.checked = checked
+        if self.checked:
+            self.icon_color = (1, 1, 1, 1)
+            self.color = (0.2, 0.28, 1, 1)
+        else:
+            self.icon_color = (1, 1, 1, 0)
+            self.color = (0.4, 0.48, 0.67, 1)
+
+    def on_press(self):
+        if self.es_nota:
+            if self.checked:
+                self.checked = False
+                self.icon_color = (1, 1, 1, 0)
+                self.color = (0.4, 0.48, 0.67, 1)
+            else:
+                self.checked = True
+                self.icon_color = (1, 1, 1, 1)
+                self.color = (0.2, 0.28, 1, 1)
+        else:
+            self.dialog = crear_dialogos(2, funcion_aceptar=lambda x: self.agregar_nota())
+            self.dialog.open()
+
+    def agregar_nota(self):
+        nota = self.dialog.content_cls.ids.nota.text
+        id_nueva_nota = self.parent.vitalgb_app.cargar_nota_de_observaciones(nota)
+        chip = ChipNotas(text=nota, es_nota=True, id_obs=id_nueva_nota, checked=True)
+        self.parent.add_widget(chip)
+        self.dialog.dismiss()
+
+
+class PopUpNotas(Popup):
+    def __init__(self, observaciones, prev_obs, **kwargs):
+        super().__init__(**kwargs)
+        self.prev_obs = prev_obs
+        for observacion in observaciones:
+            if observacion[0] not in prev_obs:
+                chip = ChipNotas(text=observacion[1], es_nota=True, id_obs=observacion[0], checked=False)
+                self.ids.chip_box.add_widget(chip)
+            else:
+                chip = ChipNotas(text=observacion[1], es_nota=True, id_obs=observacion[0], checked=True)
+                self.ids.chip_box.add_widget(chip)
+        chip = ChipNotas(text='+ Insertar Nota', es_nota=False, icon='plus', id_obs='NaN', checked=False)
+        self.ids.chip_box.add_widget(chip)
+
+    def salvar_notas(self):
+        self.obs = []
+        for nota in self.ids.chip_box.children:
+            if nota.checked:
+                self.obs.append(nota.id)
+        self.dismiss()
+
+
 class PopUpMeasuring(Popup):
     medicion = None
 
@@ -187,15 +263,26 @@ class PopUpMeasuring(Popup):
         super().__init__(**kwargs)
         self.wanna_quit = False
         self.clock = kivy_clock
+        self.obs = {}
 
     def refresh_text(self, flexion, extension):
-        self.text = ''
         if not not flexion:
-            self.text += f"Flexión máxima medida: {flexion}°\nExtensión máxima medida:"
+            self.ids.flexion.text = f"{flexion}°"
         if not not extension:
-            self.text += f"Flexión máxima medida:\nExtensión máxima medida: {extension}°\n"
+            self.ids.extension.text = f"{extension}°"
         save_button = Button(text='Guardar', on_release=lambda x: self.save())
         self.ids.buttons.add_widget(save_button)
+
+    def abrir_dialogo_notas(self, llamado):
+        observaciones = self.app.obtener_nombres_observaciones()
+        obs = []
+        if llamado in self.obs:
+            obs = self.obs[llamado]
+        self.popup_notas = PopUpNotas(observaciones, obs, on_dismiss=lambda x: self.get_observaciones(llamado))
+        self.popup_notas.open()
+
+    def get_observaciones(self, llamado):
+        self.obs[llamado] = self.popup_notas.obs
 
     def save(self):
         self.wanna_quit = True

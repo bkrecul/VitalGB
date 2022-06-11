@@ -180,23 +180,40 @@
     spacing: "12dp"
     size_hint_y: None
     height: "120dp"
-    MDTextField:
-        id: flexion
-        input_filter: 'int'
-        hint_text: "Flexión máxima"
-    MDTextField:
-        id: extension
-        input_filter: 'int'
-        hint_text: "Extensión máxima"
+    app: app
+    GridLayout:
+        cols: 2
+        MDTextField:
+            id: flexion
+            input_filter: 'int'
+            input_type: 'number'
+            hint_text: "Flexión máxima"
+        MDIconButton:
+            icon: "eye-plus-outline"
+            text_color: 0, 0, 0, 1
+            theme_text_color: "Custom"
+            on_release: root.abrir_dialogo_notas('flexion')
+            icon_size: "64sp"
+        MDTextField:
+            id: extension
+            input_filter: 'int'
+            input_type: 'number'
+            hint_text: "Extensión máxima"
+        MDIconButton:
+            icon: "eye-plus-outline"
+            text_color: 0, 0, 0, 1
+            theme_text_color: "Custom"
+            on_release: root.abrir_dialogo_notas('extension')
+            icon_size: "64sp"
 
-<DialogoCargarFuerza>
+<DialogoCargarNota>
     orientation: "vertical"
     spacing: "12dp"
     size_hint_y: None
     height: "80dp"
     MDTextField:
-        id: fuerza
-        hint_text: "Esfuerzo medido"
+        id: nota
+        hint_text: "Nota / Observación"
 
 <DialogoObservaciones>
     orientation: "vertical"
@@ -312,23 +329,85 @@
                 text: "FLEXIÓN"
                 on_release: root.flexion(), root.dismiss()
 
+<PopUpNotas>:
+    size_hint: 0.9, 0.5
+    auto_dismiss: False
+    title: "Seleccione notas sobre la medición"
+    on_open: app.obtener_nombres_observaciones()
+    BoxLayout:
+        orientation: 'vertical'
+        id: container
+
+        ScrollView:
+            size_hint_y: 1
+            StackLayout:
+                orientation: 'lr-tb'
+                size_hint_x: 1
+                size_hint_y: self.minimum_height / root.ids.container.height + 0.5
+                id: chip_box
+                vitalgb_app: app
+                padding: "10dp"
+                spacing: "8dp"
+
+        Button:
+            size_hint_y: 0.25
+            text: "Guardar"
+            on_release: root.salvar_notas()
+
 <PopUpMeasuring>
-    size_hint: 0.7, 0.3
+    size_hint: 0.7, 0.5
     title: "Esperando"
-    text: "Flexión máxima medida:\nExtensión máxima medida:"
+    app: app
     auto_dismiss: False
     BoxLayout:
         orientation: "vertical"
         size: root.width, root.height
         padding: dp(20)
         spacing: dp(10)
-        Label:
-            text_size: self.size
-            halign: 'center'
-            valign: 'center'
-            font_name: "fonts/Ubuntu-C"
-            text: root.text
+        GridLayout:
+            cols: 3
+            padding: dp(20)
+            spacing: dp(10)
+            Label:
+                text_size: self.size
+                halign: 'center'
+                valign: 'center'
+                font_name: "fonts/Ubuntu-C"
+                text: 'Flexión máxima medida: '
+            Label:
+                id: flexion
+                text_size: self.size
+                halign: 'center'
+                valign: 'center'
+                font_name: "fonts/Ubuntu-C"
+                text: ' '
+            MDIconButton:
+                icon: "eye-plus-outline"
+                text_color: 1, 1, 1, 1
+                theme_text_color: "Custom"
+                on_release: root.abrir_dialogo_notas('flexion')
+                icon_size: "64sp"
+            Label:
+                text_size: self.size
+                halign: 'center'
+                valign: 'center'
+                font_name: "fonts/Ubuntu-C"
+                text: 'Extensión máxima medida: '
+            Label:
+                id: extension
+                text_size: self.size
+                halign: 'center'
+                valign: 'center'
+                font_name: "fonts/Ubuntu-C"
+                text: ' '
+            MDIconButton:
+                icon: "eye-plus-outline"
+                text_color: 1, 1, 1, 1
+                theme_text_color: "Custom"
+                icon_size: "64sp"
+                on_release: root.abrir_dialogo_notas('extension')
         BoxLayout:
+            size_hint_y: 0.25
             orientation: "horizontal"
             id: buttons
             Button:
