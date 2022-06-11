@@ -119,10 +119,11 @@ class PantallaAgregarPaciente(MDScreen):
             self.ids.entrada_dni.text = info[3]
             self.ids.entrada_sexo.text = info[4]
             if info[5] != '':
-                fecha = info[5].split('/')
-                self.ids.entrada_dia.text = fecha[0] + " "
-                self.ids.entrada_mes.text = fecha[1] + " "
-                self.ids.entrada_year.text = fecha[2]
+                self.fecha = info[5].split('/')
+                self.ids.entrada_year.text = self.fecha[2]
+                self.ids.entrada_mes.text = self.fecha[1]
+                self.ids.entrada_dia.text = self.fecha[0]
+                self.ids.entrada_mes.focus = False
         else:
             self.ids.title.title = 'Nuevo Paciente'
 
@@ -309,7 +310,14 @@ class PantallaPacienteSeleccionado(MDScreen):
         extension = self.dialog.content_cls.ids.extension.text
         dict = self._dict_angulos(pie, extension, flexion)
 
-        self.guardar_angulos_en_DB(dict)
+        id_med = self.guardar_angulos_en_DB(dict)
+        if self.dialog.content_cls.obs != {}:
+            self.guardar_obs_angulos_db(self.dialog.content_cls.obs, id_med, pie)
+
+    def guardar_obs_angulos_db(self, obs, id_med, pie):
+        vitalgb_app.planilla_personal.guardar_observaciones_de_medicion(
+                id_med, 'observaciones_angulos', pie, obs)
+        self.dialog.dismiss()
 
     def guardar_angulos_en_DB(self, dict):
         medicion = self.obtener_magnitud_actual()
@@ -320,9 +328,10 @@ class PantallaPacienteSeleccionado(MDScreen):
         else:
             """ ELSE: sino, se generará un nuevo elemento/entrada/fila de estudio."""
             fecha = time.strftime('%d/%m/%y %H:%M'),
-            vitalgb_app.planilla_personal.cargar_mediciones(self.id, fecha, medicion, **dict)
-        self.dialog.dismiss()
+            id_medicion = vitalgb_app.planilla_personal.cargar_mediciones(self.id, fecha, medicion, **dict)
+        # self.dialog.dismiss()
         self.refresh()
+        return id_medicion
 
     def refresh(self, **kwargs):
         if 'magnitud' in kwargs:
@@ -381,9 +390,11 @@ class PantallaPacienteSeleccionado(MDScreen):
             popup = PopUpException(traductor(mensaje))
             popup.open()
         else:
-            if len(self.stream) == 2 or self.dialog.wanna_quit:
+            if self.dialog.wanna_quit:
                 dict = self._dict_angulos(pie, self.extension, self.flexion)
-                self.guardar_angulos_en_DB(dict)
+                id_med = self.guardar_angulos_en_DB(dict)
+                if self.dialog.obs != {}:
+                    self.guardar_obs_angulos_db(self.dialog.obs, id_med, pie)
                 self.clock.cancel()
 
     def medir_fuerza(self, eleccion):
@@ -665,6 +676,13 @@ class MainApp(MDApp):
                 index += 1
         self.dialog.buttons[0].on_release = self.dialog.dismiss
         self.dialog.open()
+
+    def obtener_nombres_observaciones(self):
+        observaciones = self.planilla_personal.obtener_nombres_observaciones()
+        return observaciones
+
+    def cargar_nota_de_observaciones(self, nombre_nota):
+        return self.planilla_personal.cargar_nota(nombre_nota)
 
     def _guardar_datos_institucionales(self):
         # primero se guardan todos los datos de los campos a rellenar
