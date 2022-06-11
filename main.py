@@ -315,7 +315,7 @@ class PantallaPacienteSeleccionado(MDScreen):
             self.guardar_obs_angulos_db(self.dialog.content_cls.obs, id_med, pie)
 
     def guardar_obs_angulos_db(self, obs, id_med, pie):
-        vitalgb_app.planilla_personal.guardar_observaciones_de_medicion(
+        vitalgb_app.planilla_personal.guardar_nombre_de_nota_de_medicion(
                 id_med, 'observaciones_angulos', pie, obs)
         self.dialog.dismiss()
 
