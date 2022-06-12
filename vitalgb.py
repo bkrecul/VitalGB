@@ -30,8 +30,6 @@ class PlanillaPersonal:
     def exportar(self, tipo_de_archivo, id_paciente, path, **kwargs) -> str:
         """Función que genera un archivo pdf o csv a partir de los datos internos y devuelve el path
         de la ubicación de este archivo generado."""
-        datos_angulos = self.lectura(id_paciente, 'mediciones_angulos')
-        datos_fuerzas = self.lectura(id_paciente, 'mediciones_fuerzas')
         nombre_archivo = self.devolver_nombre_paciente(id_paciente)
         datos_paciente = kwargs.get('info_paciente')
 
@@ -42,10 +40,14 @@ class PlanillaPersonal:
                 os.makedirs(os.path.join(working_directory, "reportes"))
 
         if tipo_de_archivo == "csv":
+            datos_angulos = self.lectura(id_paciente, 'mediciones_angulos')
+            datos_fuerzas = self.lectura(id_paciente, 'mediciones_fuerzas')
             full_path = f"{working_directory}/reportes/{nombre_archivo}.xlsx"
             self.excel_export(full_path, datos_paciente, datos_angulos, datos_fuerzas)
 
         if tipo_de_archivo == 'pdf':
+            datos_angulos = self.lectura(id_paciente, 'mediciones_angulos', fixed_header=True)
+            datos_fuerzas = self.lectura(id_paciente, 'mediciones_fuerzas', fixed_header=True)
             obs = kwargs.get('obs')
             full_path = f"{working_directory}/reportes/{nombre_archivo}.pdf"
             instituto = self.lectura_datos_institucionales()
@@ -62,7 +64,7 @@ class PlanillaPersonal:
                 encabezados[4] = info_paciente[3]
             if info_paciente[4] != '':
                 encabezados[5] = info_paciente[4]
-            CrearReportePDF().crear_reporte(self.data_frame, full_path, encabezados, obs, instituto)
+            CrearReportePDF().crear_reporte(datos_angulos, datos_fuerzas, full_path, encabezados, obs, instituto)
         return full_path
 
     def excel_export(self, full_path, datos_paciente, datos_angulos, datos_fuerzas):
@@ -207,7 +209,7 @@ class PlanillaPersonal:
 
     def lectura_datos_institucionales(self):
         try:
-            data = pandas.read_csv(f"{self.file_location}/VitalGB/instituto.csv", keep_default_na=False)
+            data = pandas.read_csv(os.path.join(self.file_location, 'instituto.csv'), keep_default_na=False)
         except FileNotFoundError:
             return [None, None, None, None, None]
         else:
@@ -225,12 +227,18 @@ class PlanillaPersonal:
         cursor = conexion.cursor()
         cursor.execute(base_command)
         mediciones = cursor.fetchall()
+        if kwargs.get('fixed_header'):
+            encabezados = ['Fecha', 'Flexion izquierda', 'Extension izquierda',
+                           'Flexion derecha', 'Extension derecha']
+        else:
+            encabezados = ['fecha', 'flexion_izquierda', 'extension_izquierda',
+                           'flexion_derecha', 'extension_derecha']
         mediciones = [{'id': medicion[0],
-                       'fecha': medicion[2].replace(" ", '\n'),
-                       'flexion_izquierda': medicion[5],
-                       'extension_izquierda': medicion[6],
-                       'flexion_derecha': medicion[3],
-                       'extension_derecha': medicion[4]}
+                       encabezados[0]: medicion[2].replace(" ", '\n'),
+                       encabezados[1]: medicion[5],
+                       encabezados[2]: medicion[6],
+                       encabezados[3]: medicion[3],
+                       encabezados[4]: medicion[4]}
                       for medicion in mediciones]
         conexion.close()
         if kwargs.get('formateado'):

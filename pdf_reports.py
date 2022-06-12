@@ -7,17 +7,9 @@ import pandas
 class CrearReportePDF:
     encabezados = ['AUTOR:', 'PACIENTE:', 'FEC.NAC.:', 'TIPO DOCUMENTO:', 'NRO. DOCUMENTO:', 'SEXO:']
 
-    def crear_reporte(self, datos_de_mediciones: pandas.DataFrame, filepath, datos_encabezado, obs, datos_instituto,
+    def crear_reporte(self, datos_angulo, datos_fuerza, filepath, datos_encabezado, obs, datos_instituto,
                       **kwargs):
         nombre_del_servicio = None
-        all_data = self.formatear(datos_de_mediciones.to_dict())
-
-        selected_data = all_data
-
-        # selected_data = {}
-        # for arg in args:
-        #     selected_data[arg] = all_data[arg]
-        # nombre_completo = kwargs.get("nombre_completo")
 
         pdf = PDF()
         pdf.alias_nb_pages()
@@ -101,8 +93,19 @@ class CrearReportePDF:
         pdf.set_font("Helvetica", size=8)
         pdf.multi_cell(w=184, h=5, txt=obs.upper(), border=0, align="L")
 
-        pdf.create_table(table_data=selected_data, title='Resultados', cell_width='even')
-        pdf.ln()
+        if datos_angulo:
+            df_datos_angulo = pandas.DataFrame(datos_angulo).drop('id', axis=1)
+            tabla = self.formatear(df_datos_angulo.to_dict())
+
+            pdf.create_table(table_data=tabla, title='Mediciones de ángulos', cell_width='even')
+            pdf.ln()
+
+        if datos_fuerza:
+            df_datos_fuerza = pandas.DataFrame(datos_fuerza).drop('id', axis=1)
+            tabla = self.formatear(df_datos_fuerza.to_dict())
+
+            pdf.create_table(table_data=tabla, title='Mediciones de fuerzas', cell_width='even')
+            pdf.ln()
 
         pdf.output(f"{filepath}")
 
