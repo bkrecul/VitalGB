@@ -36,7 +36,7 @@ version = 0.1
 
 # (list) Application requirements
 # comma separated e.g. requirements = sqlite3,kivy
-requirements = python3,kivy,kivymd,android,pandas,fpdf2,plyer,jnius,openpyxl,XlsxWriter,sdl2_ttf==2.0.15,Pillow,Pygments,defusedxml,translate,requests,libretranslatepy,certifi,charset-normalizer,idna,lxml,urllib3,sqlite3
+requirements = python3,kivy,kivymd,android,pandas,fpdf2,plyer,jnius,openpyxl,XlsxWriter,sdl2_ttf==2.0.15,Pillow,Pygments,defusedxml,translate,requests,libretranslatepy,certifi,charset-normalizer,idna,lxml,urllib3,sqlite3,kivy_garden.graph
 
 # (str) Custom source folders for requirements
 # Sets custom source for any requirements with recipes
@@ -46,7 +46,7 @@ requirements = python3,kivy,kivymd,android,pandas,fpdf2,plyer,jnius,openpyxl,Xls
 #garden_requirements =
 
 # (str) Presplash of the application
-#presplash.filename = %(source.dir)s/data/presplash.png
+presplash.filename = %(source.dir)s/images/logo.png
 
 # (str) Icon of the application
 icon.filename = %(source.dir)s/images/icon.png
@@ -82,7 +82,7 @@ fullscreen = 0
 # red, blue, green, black, white, gray, cyan, magenta, yellow, lightgray,
 # darkgray, grey, lightgrey, darkgrey, aqua, fuchsia, lime, maroon, navy,
 # olive, purple, silver, teal.
-#android.presplash_color = #FFFFFF
+android.presplash_color = #FFFFFF
 
 # (list) Permissions
 android.permissions = INTERNET,READ_EXTERNAL_STORAGE,WRITE_EXTERNAL_STORAGE,VIBRATE,BLUETOOTH,BLUETOOTH_ADMIN,RECORD_AUDIO
