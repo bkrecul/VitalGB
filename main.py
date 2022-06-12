@@ -1,5 +1,5 @@
+import os
 import time
-from random import randint
 import pandas
 from kivy.clock import Clock
 from kivy.config import Config
@@ -435,7 +435,6 @@ class PantallaPacienteSeleccionado(MDScreen):
     def generate_pdf(self):
         try:
             observaciones = self.dialog.content_cls.ids.observaciones.text
-            nombre_completo = vitalgb_app.planilla_general.devolver_nombre_paciente(self.id)
             info = vitalgb_app.planilla_general.devolver_info_paciente(self.id)
             path = vitalgb_app.planilla_personal.exportar(
                 'pdf', self.id, export_path, obs=observaciones, info=info)
@@ -696,7 +695,7 @@ class MainApp(MDApp):
         # luego se carga el path del archivo
         df['image_path'] = self.path
         # finalmente se guardan todos los datos en un archivo
-        df.to_csv(f"{working_path}/VitalGB/instituto.csv", index=False)
+        df.to_csv(os.path.join(working_path, 'instituto.csv'), index=False)
         self.dialog.dismiss()
 
     def editar_info_paciente(self, id_paciente):
