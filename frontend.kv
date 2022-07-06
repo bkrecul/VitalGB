@@ -77,7 +77,7 @@ MDNavigationLayout:
         canvas:
             Color:
                 rgba: 0.79, 0.94, 0.97, 1
-            Rectangle: #woohoo!!!
+            Rectangle:
                 size: self.size
                 pos: self.pos
 
@@ -88,7 +88,7 @@ MDNavigationLayout:
             canvas:
                 Color:
                     rgba: 0.01, 0.02, 0.37, 0.5
-                Rectangle: #woohoo!!!
+                Rectangle:
                     size: self.size
                     pos: self.pos
             size_hint: 1,0.1
@@ -119,8 +119,17 @@ MDNavigationLayout:
 
         # ==== CUERPO (RecycleView) ======
 
+        MDLabel:
+            size_hint_y: 0.01
+            halign: "center"
+            valing: "center"
+            color: (0.01, 0.02, 0.37, 1)
+            font_name: "fonts/Ubuntu-M"
+            font_size: dp(18)
+            text: "Personas en evaluación"
+
         RVPacientes: # The Recycle View that lists all patients
-            size_hint_y:0.9
+            size_hint_y:0.89
             id:rv
 
     # ===== Boton de Agregar Paciente ====
@@ -150,7 +159,7 @@ MDNavigationLayout:
     canvas:
         Color:
             rgba: 0.79, 0.94, 0.97, 1
-        Rectangle: #woohoo!!!
+        Rectangle:
             size: self.size
             pos: self.pos
 
@@ -160,7 +169,7 @@ MDNavigationLayout:
         # ==== CABECERA =======
 
         MDToolbar:
-            title: "Nuevo Paciente"
+            title: "Nueva persona a evaluar"
             mode: "center"
             id: title
             halign: "center"
@@ -198,7 +207,7 @@ MDNavigationLayout:
                 text_color_normal: 0,0,0,1
                 write_tab: False
                 keyboard_suggestions: True
-                input_type: 'text'
+                input_type: 'null'
                 on_text_validate: root.ids.entrada_dni.focus = True
             ## USED TO TRY STUFF WITH GBOARD
             #TextInput:
@@ -291,7 +300,7 @@ MDNavigationLayout:
     canvas:
         Color:
             rgba: 0.79, 0.94, 0.97, 1
-        Rectangle: #woohoo!!!
+        Rectangle:
             size: self.size
             pos: self.pos
 
