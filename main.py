@@ -11,6 +11,7 @@ from kivy.uix.recycleview import RecycleView
 from kivy.uix.recycleview.layout import LayoutSelectionBehavior
 from kivy.uix.recycleview.views import RecycleDataViewBehavior
 from kivy.lang import Builder
+from kivy.uix.widget import Widget
 from kivymd.app import MDApp
 from kivymd.uix.boxlayout import MDBoxLayout
 from kivymd.uix.list import OneLineIconListItem
@@ -78,7 +79,7 @@ class PantallaPrincipal(MDScreen):
                 popup = Popup(title='Información', content=Label(text=f'¡Conexión exitosa!'),
                               size_hint=(0.7, 0.2))
                 popup.open()
-                self.ids.bt.icon_color = 'green'
+                self.ids.bt.icon_color = (0, 1, 0, 1)
                 self.ids.bt.text = "Conectado"
                 vitalgb_app.bluetooth_disponible = True
                 self.verificar_conexion = Clock.schedule_interval(lambda dt: vitalgb_app.verificar_conexion_bluetooth(),
@@ -86,6 +87,9 @@ class PantallaPrincipal(MDScreen):
 
     def on_leave(self, *args):
         self.ids.rv.ids.pacientes.clear_selection()
+
+class Separator(Widget):
+    pass
 
 
 class PantallaAgregarPaciente(MDScreen):
@@ -113,7 +117,7 @@ class PantallaAgregarPaciente(MDScreen):
         )
         if vitalgb_app.patient_selected is not None:
             info = vitalgb_app.planilla_general.devolver_info_paciente(vitalgb_app.patient_selected)
-            self.ids.title.title = 'Editar Paciente'
+            self.ids.title.title = 'Editar persona a evaluar'
             self.ids.entrada_nombre.text = info[1]
             self.ids.entrada_apellido.text = info[2]
             self.ids.entrada_dni.text = info[3]
@@ -125,7 +129,7 @@ class PantallaAgregarPaciente(MDScreen):
                 self.ids.entrada_dia.text = self.fecha[0]
                 self.ids.entrada_mes.focus = False
         else:
-            self.ids.title.title = 'Nuevo Paciente'
+            self.ids.title.title = 'Nueva persona a evaluar'
 
     def crear_paciente(self):
         # Leer los datos de las entradas
@@ -313,6 +317,7 @@ class PantallaPacienteSeleccionado(MDScreen):
         id_med = self.guardar_angulos_en_DB(dict)
         if self.dialog.content_cls.obs != {}:
             self.guardar_obs_angulos_db(self.dialog.content_cls.obs, id_med, pie)
+        self.dialog.dismiss()
 
     def guardar_obs_angulos_db(self, obs, id_med, pie):
         vitalgb_app.planilla_personal.guardar_nombre_de_nota_de_medicion(
@@ -396,6 +401,7 @@ class PantallaPacienteSeleccionado(MDScreen):
                 if self.dialog.obs != {}:
                     self.guardar_obs_angulos_db(self.dialog.obs, id_med, pie)
                 self.clock.cancel()
+                self.dialog.dismiss()
 
     def medir_fuerza(self, eleccion):
         """ Esta función es llamada en intervalos de tiempo (Clock), ya que constantemente revisará si hay datos
@@ -410,11 +416,10 @@ class PantallaPacienteSeleccionado(MDScreen):
                     self.dialog.medidas.append(self.fuerza)
                     self.dialog.update_points()
                     self.dialog.update_xaxis()
-            else:
-                vitalgb_app.byte = 1
             # if not self.dialog.its_stopped:
-            #     test = randint(1, 20) * 0.1
-            #     self.dialog.medidas.append(gay)
+            #     from random import randint
+            #     test = randint(1, 110) * 0.1
+            #     self.dialog.medidas.append(test)
             #     self.dialog.update_points()
             #     self.dialog.update_xaxis()
         except Exception as mensaje:
@@ -426,6 +431,7 @@ class PantallaPacienteSeleccionado(MDScreen):
                 self.dialog.clock.cancel()
                 dict = self._dict_angulos(eleccion, self.dialog.max, 0)
                 self.guardar_angulos_en_DB(dict)
+                self.dialog.dismiss()
 
     def pedir_observaciones(self):
         self.dialog = crear_dialogos(4, funcion_aceptar=lambda x: self.generate_pdf())
@@ -563,10 +569,12 @@ class SelectableBox(RecycleDataViewBehavior, BoxLayout):
     selectable = BooleanProperty(True)
     selection = []
     anterior = []
+    color_base = (0.79, 0.94, 0.97, 1)
 
     def refresh_view_attrs(self, rv, index, data):
         """ Catch and handle the view changes """
         self.index = index
+        self.color_base = (0.1, 0.1, 0.5, 0.25) if int(self.index) % 2 == 0 else (0.79, 0.94, 0.97, 1)
         return super(SelectableBox, self).refresh_view_attrs(rv, index, data)
 
     def on_touch_down(self, touch):
@@ -632,16 +640,20 @@ class MainApp(MDApp):
                                                             'vuelva a conectarse al dispositivo.'),
                           size_hint=(0.7, 0.2))
             popup.open()
-            self.root.ids.pantalla_principal.verificar_conexion.cancel()
-            self.root.ids.pantalla_principal.ids.bt.icon_color = 'red'
-            self.root.ids.pantalla_principal.ids.bt.text = "Conectar"
-            self.bluetooth_disponible = False
             try:
-                self.root.ids.pantalla_paciente_seleccionado.popup.dismiss()
-                self.root.ids.pantalla_paciente_seleccionado.clock.cancel()
-            finally:
-                pass
-            vibrator.vibrate(0.5)
+                self.root.ids.pantalla_principal.verificar_conexion.cancel()
+                self.root.ids.pantalla_principal.ids.bt.icon_color = 'red'
+                self.root.ids.pantalla_principal.ids.bt.text = "Conectar"
+                self.bluetooth_disponible = False
+                try:
+                    self.root.ids.pantalla_paciente_seleccionado.popup.dismiss()
+                    self.root.ids.pantalla_paciente_seleccionado.clock.cancel()
+                finally:
+                    pass
+                vibrator.vibrate(0.5)
+            except Exception as mensaje:
+                popup = PopUpException(mensaje)
+                popup.open()
 
     def build(self):
         Window.bind(on_keyboard=self.key_input)
