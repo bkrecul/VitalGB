@@ -86,8 +86,9 @@ class PlanillaPersonal:
             max_row = len(df_datos_angulos)
 
             # calculamos el rango de movimiento de cada pie
-            resultados = self.calcular_rango_movil(datos_angulos)[0]
-            df_resultados = pandas.DataFrame(resultados)
+            resultados = self.calcular_rango_movil(datos_angulos)
+            min_result = resultados[2]
+            df_resultados = pandas.DataFrame(resultados[0])
             df_resultados.to_excel(writer, sheet_name='Resultados', index=False, header=True)
 
             format0 = workbook.add_format({'num_format': '0°', 'align': 'left', 'valign': 'vjustify'})
@@ -120,13 +121,40 @@ class PlanillaPersonal:
             # Configure the chart axes.
             chart_resultados.set_x_axis({'name': 'Fecha', 'date_axis': True,
                                          'minor_gridlines': {'visible': True}})  # 'num_font':  {'rotation': 45}
-            chart_resultados.set_y_axis({'name': 'Angulo', 'major_gridlines': {'visible': True}})
+            chart_resultados.set_y_axis({'max': 80, 'min': min_result, 'major_unit': 5, 'name': 'Ángulo', 'major_gridlines': {'visible': True}})
 
             # Position the legend at the top of the chart.
             chart_resultados.set_legend({'position': 'top'})
 
             # Insert the chart into the worksheet.
             worksheet_resultados.insert_chart(f'A{max_row + 2}', chart_resultados)
+
+            chart1 = workbook.add_chart({'type': 'column'})
+
+            # Configure the first series.
+            chart1.add_series({
+                'name': f'=Resultados!$B$1',
+                'categories': f'=Resultados!$A$2:$A${max_row + 1}',
+                'values': f'=Resultados!$B$2:$B${max_row + 1}',
+            })
+
+            # Configure a second series. Note use of alternative syntax to define ranges.
+            chart1.add_series({
+                'name': f'=Resultados!$D$1',
+                'categories': f'=Resultados!$A$2:$A${max_row + 1}',
+                'values': f'=Resultados!$D$2:$D${max_row + 1}',
+            })
+
+            # Add a chart title and some axis labels.
+            chart1.set_title({'name': 'Evolución del Rango'})
+            chart1.set_x_axis({'name': 'Fecha'})
+            chart1.set_y_axis({'name': 'Ángulo'})
+
+            # Set an Excel chart style.
+            chart1.set_style(11)
+
+            # Insert the chart into the worksheet (with an offset).
+            worksheet_resultados.insert_chart(f'D{max_row + 2}', chart1, {'x_offset': 25, 'y_offset': 10})
 
             df_datos_angulos.to_excel(writer, sheet_name='Ángulos', index=False, header=True)
 
@@ -156,7 +184,7 @@ class PlanillaPersonal:
             # Configure the chart axes.
             chart_angulos.set_x_axis({'name': 'Fecha', 'date_axis': True,
                                       'minor_gridlines': {'visible': True}})  # 'num_font':  {'rotation': 45}
-            chart_angulos.set_y_axis({'name': 'Angulo', 'major_gridlines': {'visible': True}})
+            chart_angulos.set_y_axis({'max': 30, 'name': 'Ángulo', 'major_gridlines': {'visible': True}})
 
             # Position the legend at the top of the chart.
             chart_angulos.set_legend({'position': 'top'})
@@ -182,7 +210,7 @@ class PlanillaPersonal:
             # Configure the chart axes.
             chart_angulos_2.set_x_axis({'name': 'Fecha', 'date_axis': True,
                                         'minor_gridlines': {'visible': True}})  # 'num_font':  {'rotation': 45}
-            chart_angulos_2.set_y_axis({'name': 'Angulo', 'major_gridlines': {'visible': True}})
+            chart_angulos_2.set_y_axis({'max': 50, 'name': 'Ángulo', 'major_gridlines': {'visible': True}})
 
             # Position the legend at the top of the chart.
             chart_angulos_2.set_legend({'position': 'top'})
@@ -228,13 +256,13 @@ class PlanillaPersonal:
         cursor.execute(base_command)
         mediciones = cursor.fetchall()
         if kwargs.get('fixed_header'):
-            encabezados = ['Fecha', 'Flexion izquierda', 'Extension izquierda',
-                           'Flexion derecha', 'Extension derecha']
+            encabezados = ['Fecha', 'Flexión izquierda', 'Extensión izquierda',
+                           'Flexión derecha', 'Extensión derecha']
         else:
             encabezados = ['fecha', 'flexion_izquierda', 'extension_izquierda',
                            'flexion_derecha', 'extension_derecha']
         mediciones = [{'id': medicion[0],
-                       encabezados[0]: medicion[2].replace(" ", '\n'),
+                       encabezados[0]: medicion[2].replace(" ", ' \n'),
                        encabezados[1]: medicion[5],
                        encabezados[2]: medicion[6],
                        encabezados[3]: medicion[3],
@@ -314,6 +342,7 @@ class PlanillaPersonal:
     def calcular_rango_movil(self, mediciones_angulos):
         resultados = []
         indice_datos_ausentes = []
+        min = 80
         for medicion in mediciones_angulos:
             calculo = {}
             indice = None
@@ -321,6 +350,8 @@ class PlanillaPersonal:
             calculo['Fecha'] = medicion['fecha']
             try:
                 calculo['Rango izquierdo'] = medicion['flexion_izquierda'] + medicion['extension_izquierda']
+                while min > calculo['Rango izquierdo']:
+                    min = min - 5
             except TypeError:
                 indice = medicion['id']
                 # TODO: Cambiar reemplazo de dato ausente por un promedio de los datos ya existentes
@@ -331,6 +362,8 @@ class PlanillaPersonal:
                 calculo['Notas pie izquierdo'] = ""
             try:
                 calculo['Rango derecho'] = medicion['flexion_derecha'] + medicion['extension_derecha']
+                while min > calculo['Rango derecho']:
+                    min = min - 5
             except TypeError:
                 calculo['Rango derecho'] = 65
                 indice = medicion['id']
@@ -341,7 +374,7 @@ class PlanillaPersonal:
             if indice is not None:
                 indice_datos_ausentes.append(indice)
             resultados.append(calculo)
-        return resultados, indice_datos_ausentes
+        return resultados, indice_datos_ausentes, min
 
     def guardar_nombre_de_nota_de_medicion(self, id_medicion, magnitud, pie, observaciones: dict):
         base_command = f'INSERT INTO {magnitud} ("id_medicion", "tipo", "id_observacion") VALUES ' \
@@ -372,6 +405,9 @@ class PlanillaPersonal:
                 notas_pie_izquierdo += self.obtener_nombres_observaciones(id=nota[3])[1] + ", "
             if tipo == 'flexion_derecha' or tipo == 'extension_derecha':
                 notas_pie_derecho += self.obtener_nombres_observaciones(id=nota[3])[1] + ", "
+        # Borramos las comas sobrantes
+        notas_pie_izquierdo = notas_pie_izquierdo[0:-2]
+        notas_pie_derecho = notas_pie_derecho[0:-2]
         return notas_pie_izquierdo, notas_pie_derecho
 
     def obtener_nombres_observaciones(self, **kwargs):
