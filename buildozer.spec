@@ -1,5 +1,5 @@
 [app]
-
+# After much effort I realized that numeric keyboard works only with kivy==master and p4a==develop. So I changed buildozer.spec requirements from kivy==2.0.0 to kivy==master,also p4a.branch from master to develop.Now numeric keyboard works fine.
 # (str) Title of your application
 title = VitalGB
 
