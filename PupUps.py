@@ -8,8 +8,19 @@ from kivymd.uix.chip import MDChip
 from kivymd.uix.dialog import MDDialog
 from translate import Translator
 from plyer import stt
-from kivy.garden.graph import Graph, LinePlot
+from kivy_garden.graph import Graph, LinePlot
 # cambiar por kivy_garden.graph al construir apk
+
+
+def traductor(mensaje):
+    mensaje = str(mensaje)
+    translator = Translator(to_lang='es')
+    try:
+        mensaje_translated = translator.translate(mensaje)
+    except:
+        return mensaje
+    else:
+        return mensaje_translated
 
 
 class DialogoCargarAngulos(BoxLayout):
@@ -67,17 +78,6 @@ class DialogoObservaciones(BoxLayout):
 
 class DialogoCargarDatosInstitucionales(BoxLayout):
     pass
-
-
-def traductor(mensaje):
-    mensaje = str(mensaje)
-    translator = Translator(to_lang='es')
-    try:
-        mensaje_translated = translator.translate(mensaje)
-    except:
-        return mensaje
-    else:
-        return mensaje_translated
 
 
 def crear_dialogos(tipo, **kwargs):
@@ -270,8 +270,9 @@ class PopUpMeasuring(Popup):
             self.ids.flexion.text = f"{flexion}°"
         if not not extension:
             self.ids.extension.text = f"{extension}°"
-        save_button = Button(text='Guardar', on_release=lambda x: self.save())
-        self.ids.buttons.add_widget(save_button)
+        self.ids.btn_guardar.disabled = False
+        # save_button = Button(text='Guardar', on_release=lambda x: self.save())
+        # self.ids.buttons.add_widget(save_button)
 
     def abrir_dialogo_notas(self, llamado):
         observaciones = self.app.obtener_nombres_observaciones()
@@ -326,8 +327,8 @@ class PopUpMeasuringFuerza(Popup):
             ylabel='Fuerza',
             x_ticks_minor=1,
             x_ticks_major=1,
-            y_ticks_major=0.5,
-            y_ticks_minor=5,
+            y_ticks_major=1,
+            y_ticks_minor=0,
             y_grid_label=True,
             x_grid_label=True,
             padding=5,
@@ -337,9 +338,9 @@ class PopUpMeasuringFuerza(Popup):
             y_grid=True,
             xmax=10,
             ymin=0,
-            ymax=2)
+            ymax=11)
         self.ids.graph.add_widget(self.graph)
-        self.plot = LinePlot(color=[0, 0, 1, 1], line_width=1.5)
+        self.plot = LinePlot(color=[1, 0.5, 0, 1], line_width=1.5)
         self.plot.points = [(x, self.medidas[x]) for x in range(len(self.medidas))]
         self.graph.add_plot(self.plot)
 
@@ -369,3 +370,6 @@ class PopUpMeasuringFuerza(Popup):
 
     def terminar(self):
         self.wanna_quit = True
+
+    def on_dismiss(self):
+        self.app.byte = 1
