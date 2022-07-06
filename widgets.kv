@@ -56,10 +56,13 @@
     flexion_izquierda: ""
     extension_izquierda: ""
     selected: False
+    # if len(self.text) == 2: root.ids.entrada_year.focus = True
+    #color_base: (0.79, 0.94, 1, 1) if not isinstance(self.index, int) else (0.79, 0.94, 1, 1) if int(self.index) % 2 == 0 else (0.79, 0.94, 0.97, 1)
     # Draw a background to indicate selection
     canvas.before:
-        Color:
-            rgba: (.0, 0.9, .1, .3) if self.selected else (0.79, 0.94, 0.97, 1)
+        Color
+            #rgba: (.0, 0.9, .1, .3) if self.selected else (0.79, 0.94, 1, 1) if int(root.index) % 2 == 0 else (0.79, 0.94, 0.97, 1)
+            rgba: (.0, 0.9, .1, .3) if self.selected else root.color_base
         Rectangle:
             pos: self.pos
             size: self.size
@@ -365,16 +368,17 @@
         spacing: dp(10)
         GridLayout:
             cols: 3
-            padding: dp(20)
             spacing: dp(10)
             Label:
                 text_size: self.size
+                size_hint_x: 0.6
                 halign: 'center'
                 valign: 'center'
                 font_name: "fonts/Ubuntu-C"
                 text: 'Flexión máxima medida: '
             Label:
                 id: flexion
+                size_hint_x: 0.2
                 text_size: self.size
                 halign: 'center'
                 valign: 'center'
@@ -382,18 +386,26 @@
                 text: ' '
             MDIconButton:
                 icon: "eye-plus-outline"
+                size_hint_x: 0.2
                 text_color: 1, 1, 1, 1
                 theme_text_color: "Custom"
                 on_release: root.abrir_dialogo_notas('flexion')
                 icon_size: "64sp"
+        Separator:
+            size_hint_y: 0.001
+        GridLayout:
+            cols: 3
+            spacing: dp(10)
             Label:
                 text_size: self.size
+                size_hint_x: 0.6
                 halign: 'center'
                 valign: 'center'
                 font_name: "fonts/Ubuntu-C"
                 text: 'Extensión máxima medida: '
             Label:
                 id: extension
+                size_hint_x: 0.2
                 text_size: self.size
                 halign: 'center'
                 valign: 'center'
@@ -401,6 +413,7 @@
                 text: ' '
             MDIconButton:
                 icon: "eye-plus-outline"
+                size_hint_x: 0.2
                 text_color: 1, 1, 1, 1
                 theme_text_color: "Custom"
                 icon_size: "64sp"
@@ -412,12 +425,26 @@
             Button:
                 text: "Cancelar"
                 on_release: root.clock.cancel(), root.dismiss()
+            Button:
+                id: btn_guardar
+                text: "Guardar"
+                disabled: True
+                on_release: root.save()
+
+<Separator>:
+    canvas:
+        Color:
+            rgba: (1, 1, 1, 1)
+        Rectangle:
+            pos: self.pos
+            size: self.size
 
 <PopUpMeasuringFuerza>
     size_hint: 0.9, 0.9
     title: "Esperando"
     auto_dismiss: False
     text: ''
+    app: app
     on_dismiss: self.clock.cancel()
     BoxLayout:
         orientation: "vertical"
